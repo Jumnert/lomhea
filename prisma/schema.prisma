@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,18 +10,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  CONTRIBUTOR
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
-  emailVerified DateTime?
+  emailVerified Boolean   @default(false)
   image         String?
+  role          Role      @default(USER)
+  banned        Boolean   @default(false)
   sessions      Session[]
   accounts      Account[]
   
   // App specific
   favorites     Favorite[]
   reviews       Review[]
+  requests      PlaceRequest[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -26,8 +44,10 @@ model User {
 model Session {
   id        String   @id @default(cuid())
   userId    String
-  expires   DateTime
+  expiresAt DateTime
   token     String   @unique
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -40,12 +60,13 @@ model Account {
   providerId            String
   accessToken           String?
   refreshToken          String?
+  idToken               String?
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
   createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  updatedAt             DateTime @updatedAt
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -53,23 +74,54 @@ model Verification {
   id         String   @id @default(cuid())
   identifier String
   value      String
-  expires    DateTime
+  expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
 
+
 model Place {
   id          String   @id @default(cuid())
   name        String
+  nameKh      String?
   description String?
   lat         Float
   lng         Float
   category    String
-  images      String[]
+  province    String
+  isVerified  Boolean  @default(false)
+  images      String[] // Storing Cloudinary URLs directly as an array
   rating      Float    @default(0)
   reviewCount Int      @default(0)
-  favorites   Favorite[]
-  reviews     Review[]
+  
+  accommodations Accommodation[]
+  foods          Food[]
+  favorites      Favorite[]
+  reviews        Review[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Accommodation {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // Hotel, Guesthouse, etc.
+  priceRange  String   // e.g. "$10 - $30"
+  bookingUrl  String?
+  placeId     String
+  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Food {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // Restaurant, Street Food, etc.
+  priceRange  String
+  placeId     String
+  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -81,6 +133,7 @@ model Favorite {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, placeId])
 }
@@ -95,4 +148,22 @@ model Review {
   place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PlaceRequest {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  nameEn       String
+  nameKh       String?
+  province     String
+  category     String
+  description  String
+  googleMapUrl String
+  reason       String
+  images       String[]      // Cloudinary URLs
+  status       RequestStatus @default(PENDING)
+  adminNote    String?       // rejection reason
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }

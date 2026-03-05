@@ -4,7 +4,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen w-full overflow-x-hidden antialiased">
+    <div className="min-h-screen w-full overflow-x-hidden antialiased flex">
       {children}
     </div>
   );

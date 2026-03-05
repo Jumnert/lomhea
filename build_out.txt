@@ -1,0 +1,43 @@
+
+> lomhea@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 24.6s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/15) ...
+  Generating static pages using 11 workers (3/15) 
+  Generating static pages using 11 workers (7/15) 
+  Generating static pages using 11 workers (11/15) 
+✓ Generating static pages using 11 workers (15/15) in 850.1ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin
+├ ○ /admin/places
+├ ○ /admin/requests
+├ ○ /admin/users
+├ ƒ /api/auth/[...all]
+├ ƒ /api/favorites
+├ ƒ /api/places
+├ ƒ /api/places/[id]
+├ ○ /explore
+├ ○ /favorites
+├ ○ /login
+├ ƒ /place/[id]
+├ ○ /profile
+├ ○ /register
+└ ○ /request-place
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

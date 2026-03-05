@@ -98,6 +98,15 @@
   --radius-3xl: calc(var(--radius) + 12px);
 
   --radius-4xl: calc(var(--radius) + 16px);
+
+  --index-40: 40;
+  --index-50: 50;
+  --index-60: 60;
+  --index-100: 100;
+  --index-105: 105;
+  --index-110: 110;
+  --index-200: 200;
+  --index-500: 500;
 }
 
 :root {
@@ -167,4 +176,80 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Lomhea Custom Loader */
+.loader-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loader-dash {
+  animation:
+    dashArray 2s ease-in-out infinite,
+    dashOffset 2s linear infinite;
+}
+
+.loader-spin {
+  animation:
+    spinDashArray 2s ease-in-out infinite,
+    spin 8s ease-in-out infinite,
+    dashOffset 2s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes dashArray {
+  0% {
+    stroke-dasharray: 0 1 359 0;
+  }
+  50% {
+    stroke-dasharray: 0 359 1 0;
+  }
+  100% {
+    stroke-dasharray: 359 1 0 0;
+  }
+}
+
+@keyframes spinDashArray {
+  0% {
+    stroke-dasharray: 270 90;
+  }
+  50% {
+    stroke-dasharray: 0 360;
+  }
+  100% {
+    stroke-dasharray: 270 90;
+  }
+}
+
+@keyframes dashOffset {
+  0% {
+    stroke-dashoffset: 365;
+  }
+  100% {
+    stroke-dashoffset: 5;
+  }
+}
+
+@keyframes spin {
+  0% {
+    rotate: 0deg;
+  }
+  12.5%,
+  25% {
+    rotate: 270deg;
+  }
+  37.5%,
+  50% {
+    rotate: 540deg;
+  }
+  62.5%,
+  75% {
+    rotate: 810deg;
+  }
+  87.5%,
+  100% {
+    rotate: 1080deg;
+  }
 }
