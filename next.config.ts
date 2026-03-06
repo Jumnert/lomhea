@@ -19,6 +19,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api.maptiler.com",
       },
+      {
+        protocol: "https",
+        hostname: "upload.wikimedia.org",
+      },
+      {
+        protocol: "https",
+        hostname: "www.tourismcambodia.com",
+      },
+      {
+        protocol: "https",
+        hostname: "wonderpass.asia",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.aceternity.com",
+      },
     ],
   },
 };

@@ -1,0 +1,25 @@
+
+> lomhea@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.8s
+  Running TypeScript ...
+Failed to compile.
+
+./components/ui/apple-cards-carousel.tsx:185:19
+Type error: Argument of type 'RefObject<HTMLDivElement | null>' is not assignable to parameter of type 'RefObject<HTMLDivElement>'.
+  Type 'HTMLDivElement | null' is not assignable to type 'HTMLDivElement'.
+    Type 'null' is not assignable to type 'HTMLDivElement'.
+
+[0m [90m 183 |[39m   }[33m,[39m [open])[33m;[39m
+ [90m 184 |[39m
+[31m[1m>[22m[39m[90m 185 |[39m   useOutsideClick(containerRef[33m,[39m () [33m=>[39m handleClose())[33m;[39m
+ [90m     |[39m                   [31m[1m^[22m[39m
+ [90m 186 |[39m
+ [90m 187 |[39m   [36mconst[39m handleOpen [33m=[39m () [33m=>[39m {
+ [90m 188 |[39m     setOpen([36mtrue[39m)[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

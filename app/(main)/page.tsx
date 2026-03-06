@@ -1,30 +1,20 @@
-import { MapContainer } from "@/components/map/MapContainer";
-import { FilterBar } from "@/components/map/FilterBar";
-import { Navbar } from "@/components/layout/Navbar";
-import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
+"use client";
 
-export default function ExplorationPage() {
-  return (
-    <div className="relative w-full h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-      {/* Header / Nav */}
-      <Navbar />
+import { useSession } from "@/lib/auth-client";
+import LandingPage from "@/components/landing/LandingPage";
+import { ExplorePage } from "@/components/map/ExplorePage";
+import { LomheaLoader } from "@/components/ui/LomheaLoader";
 
-      {/* Main Map View */}
-      <main className="w-full h-full relative z-0">
-        <MapContainer />
-      </main>
+export default function EntryPage() {
+  const { data: session, isPending } = useSession();
 
-      {/* Floating Filters - right below navbar */}
-      <div className="absolute top-[82px] left-0 right-0 z-20 pointer-events-none">
-        <div className="pointer-events-auto py-1.5">
-          <FilterBar />
-        </div>
-      </div>
+  if (isPending) {
+    return <LomheaLoader />;
+  }
 
-      {/* Floating Place Detail Card */}
-      <div className="z-30">
-        <PlaceDetailCard />
-      </div>
-    </div>
-  );
+  if (session) {
+    return <ExplorePage />;
+  }
+
+  return <LandingPage />;
 }
