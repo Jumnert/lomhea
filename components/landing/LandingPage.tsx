@@ -314,39 +314,6 @@ export default function LandingPage() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Cinematic Opening Timeline
-      const tl = gsap.timeline();
-
-      tl.from(".laser-bg", {
-        scale: 1.1,
-        opacity: 0,
-        duration: 2.5,
-        ease: "power2.out",
-      })
-        .from(
-          ".hero-panel",
-          {
-            y: 100,
-            opacity: 0,
-            scale: 0.9,
-            skewY: 2,
-            duration: 1.8,
-            ease: "expo.out",
-          },
-          "-=1.8",
-        )
-        .from(
-          ".hero-text-block > *",
-          {
-            y: 30,
-            opacity: 0,
-            stagger: 0.2,
-            duration: 1,
-            ease: "power3.out",
-          },
-          "-=1",
-        );
-
       // Staggered logos entrance
       gsap.from(".partner-logo", {
         y: 20,
@@ -366,7 +333,7 @@ export default function LandingPage() {
           scrollTrigger: {
             trigger: section,
             start: "top 90%",
-            toggleActions: "play none none reverse",
+            toggleActions: "play none none none",
           },
           y: 60,
           skewX: -2,
@@ -392,32 +359,6 @@ export default function LandingPage() {
           scrub: true,
         },
       });
-
-      // Hero Content Tunnel Effect
-      gsap.to(".hero-panel", {
-        scale: 0.8,
-        opacity: 0,
-        y: -100,
-        ease: "power2.inOut",
-        scrollTrigger: {
-          trigger: heroRef.current,
-          start: "center center",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-
-      // Atmospheric Laser Drift
-      gsap.to(".laser-bg", {
-        yPercent: 30,
-        ease: "none",
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: true,
-        },
-      });
     }, containerRef);
 
     return () => ctx.revert();
@@ -427,7 +368,7 @@ export default function LandingPage() {
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className="bg-white dark:bg-black min-h-screen selection:bg-zinc-800 selection:text-white overflow-x-hidden"
+      className="dark bg-black min-h-screen selection:bg-zinc-800 selection:text-white overflow-x-hidden"
     >
       {/* Navigation */}
       <Navbar className="top-0! pt-4">

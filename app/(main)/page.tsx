@@ -9,7 +9,11 @@ export default function EntryPage() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
-    return <LomheaLoader />;
+    return (
+      <div className="dark w-full min-h-screen flex items-center justify-center bg-black">
+        <LomheaLoader variant="dark" />
+      </div>
+    );
   }
 
   if (session) {
