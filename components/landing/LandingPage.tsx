@@ -281,29 +281,142 @@ export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const revealImgRef = useRef<HTMLDivElement>(null);
 
+  // Magnetic interaction logic
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const magneticElements = document.querySelectorAll(".magnetic-item");
+    magneticElements.forEach((el) => {
+      const target = el as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const distance = Math.sqrt(x * x + y * y);
+      const strength = target.dataset.strength
+        ? parseInt(target.dataset.strength)
+        : 40;
+
+      if (distance < 120) {
+        gsap.to(target, {
+          x: x * (strength / 100),
+          y: y * (strength / 100),
+          duration: 0.6,
+          ease: "power2.out",
+        });
+      } else {
+        gsap.to(target, {
+          x: 0,
+          y: 0,
+          duration: 0.8,
+          ease: "elastic.out(1, 0.3)",
+        });
+      }
+    });
+  };
+
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero entrance
-      gsap.from(".hero-content > *", {
-        y: 40,
+      // Cinematic Opening Timeline
+      const tl = gsap.timeline();
+
+      tl.from(".laser-bg", {
+        scale: 1.1,
         opacity: 0,
-        duration: 1,
-        stagger: 0.2,
-        ease: "power4.out",
+        duration: 2.5,
+        ease: "power2.out",
+      })
+        .from(
+          ".hero-panel",
+          {
+            y: 100,
+            opacity: 0,
+            scale: 0.9,
+            skewY: 2,
+            duration: 1.8,
+            ease: "expo.out",
+          },
+          "-=1.8",
+        )
+        .from(
+          ".hero-text-block > *",
+          {
+            y: 30,
+            opacity: 0,
+            stagger: 0.2,
+            duration: 1,
+            ease: "power3.out",
+          },
+          "-=1",
+        );
+
+      // Staggered logos entrance
+      gsap.from(".partner-logo", {
+        y: 20,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".partner-section",
+          start: "top 85%",
+        },
       });
 
-      // Section animations
+      // Section reveal enhancements with Skew
       gsap.utils.toArray<HTMLElement>(".reveal-section").forEach((section) => {
         gsap.from(section, {
           scrollTrigger: {
             trigger: section,
-            start: "top 80%",
+            start: "top 90%",
+            toggleActions: "play none none reverse",
           },
           y: 60,
+          skewX: -2,
+          scale: 0.95,
           opacity: 0,
           duration: 1.2,
           ease: "power3.out",
         });
+      });
+
+      // Deep Spatial Parallax for Bento Reveal Grid
+      gsap.to(".bento-reveal-grid", {
+        yPercent: -35,
+        scale: 1.1,
+        rotationX: 8,
+        filter: "blur(10px)",
+        opacity: 0.3,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Hero Content Tunnel Effect
+      gsap.to(".hero-panel", {
+        scale: 0.8,
+        opacity: 0,
+        y: -100,
+        ease: "power2.inOut",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "center center",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Atmospheric Laser Drift
+      gsap.to(".laser-bg", {
+        yPercent: 30,
+        ease: "none",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+        },
       });
     }, containerRef);
 
@@ -313,12 +426,16 @@ export default function LandingPage() {
   return (
     <div
       ref={containerRef}
+      onMouseMove={handleMouseMove}
       className="bg-white dark:bg-black min-h-screen selection:bg-zinc-800 selection:text-white overflow-x-hidden"
     >
       {/* Navigation */}
       <Navbar className="top-0! pt-4">
         <NavBody className="bg-white/5! backdrop-blur-xl! border border-white/10 shadow-2xl">
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 magnetic-item"
+            data-strength="15"
+          >
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
               <IconMapPin className="text-black" size={18} />
             </div>
@@ -341,7 +458,8 @@ export default function LandingPage() {
             <NavbarButton
               href="/register"
               variant="dark"
-              className="rounded-full px-6"
+              className="rounded-full px-6 magnetic-item"
+              data-strength="20"
             >
               Get Started
             </NavbarButton>
@@ -385,7 +503,7 @@ export default function LandingPage() {
           fogFallSpeed={0.6}
           decay={1.1}
           falloffStart={1.2}
-          className="opacity-60 -translate-y-[15%]"
+          className="opacity-60 -translate-y-[15%] laser-bg"
         />
 
         {/* The Reveal Layer (Hidden by default, reveals on hover) */}
@@ -406,7 +524,7 @@ export default function LandingPage() {
           }
         >
           {/* Bento Reveal Background */}
-          <div className="grid grid-cols-6 grid-rows-6 gap-6 w-full h-full p-20 opacity-80 transition-all duration-700 grayscale-[0.5] contrast-[1.1]">
+          <div className="bento-reveal-grid grid grid-cols-6 grid-rows-6 gap-6 w-full h-full p-20 opacity-80 transition-all duration-700 grayscale-[0.5] contrast-[1.1]">
             <img
               src="https://images.unsplash.com/photo-1593009567545-d414364b3d55?w=800&auto=format&fit=crop&q=60"
               className="w-full h-full object-cover rounded-3xl col-span-2 row-span-3 shadow-2xl"
@@ -441,7 +559,7 @@ export default function LandingPage() {
         </div>
 
         {/* Feature Preview Block (Floating over bottom fixed) */}
-        <div className="absolute bottom-10 inset-x-0 z-20 flex justify-center px-4">
+        <div className="absolute bottom-10 inset-x-0 z-20 flex justify-center px-4 hero-panel">
           <div className="w-full max-w-[85vw]">
             <div className="relative overflow-hidden rounded-[40px] border-2 border-white/20 shadow-[0_0_80px_rgba(255,255,255,0.15)]">
               <div className="aspect-21/13 md:aspect-21/9 w-full bg-neutral-900 overflow-hidden relative">
@@ -451,7 +569,7 @@ export default function LandingPage() {
                   alt="Lomhea Experience"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/20"></div>
-                <div className="absolute bottom-10 left-10 text-left">
+                <div className="absolute bottom-10 left-10 text-left hero-text-block">
                   <span className="text-white/40 font-medium text-xs uppercase tracking-[0.5em] mb-4 block">
                     Lomhea Experience
                   </span>
@@ -469,8 +587,8 @@ export default function LandingPage() {
       </section>
 
       {/* Partners / Social Proof */}
-      <section className="py-20 border-y border-neutral-100 dark:border-white/5 bg-zinc-50/50 dark:bg-black/20 reveal-section">
-        <div className="container mx-auto px-6 mb-12 text-center text-sm font-medium text-neutral-400 uppercase tracking-[0.2em]">
+      <section className="partner-section py-20 border-y border-neutral-100 dark:border-white/5 bg-zinc-50/50 dark:bg-black/20 reveal-section">
+        <div className="container mx-auto px-6 mb-12 text-center text-sm font-medium text-neutral-400 uppercase tracking-[0.2em] partner-logo">
           Proudly Supporting
         </div>
         <LogoLoop
