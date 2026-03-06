@@ -500,12 +500,12 @@ export default function LandingPage() {
         </div>
 
         {/* Feature Preview Block (Floating over bottom fixed) */}
-        <div className="absolute bottom-10 inset-x-0 z-20 flex justify-center px-4 hero-panel">
+        <div className="absolute bottom-5 inset-x-0 z-20 flex justify-center px-4 hero-panel">
           <div className="w-full max-w-[85vw]">
             <div className="relative overflow-hidden rounded-[40px] border-2 border-white/20 shadow-[0_0_80px_rgba(255,255,255,0.15)]">
               <div className="aspect-21/13 md:aspect-21/9 w-full bg-neutral-900 overflow-hidden relative">
                 <img
-                  src="/heroimg/blackvarient.png"
+                  src="/heroImg/blackvarient.png"
                   className="w-full h-full object-cover opacity-80 grayscale"
                   alt="Lomhea Experience"
                 />
