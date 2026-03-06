@@ -56,7 +56,7 @@ export async function POST(
           lat: 0,
           lng: 0,
           isVerified: true,
-        },
+        } as any,
       });
     });
 

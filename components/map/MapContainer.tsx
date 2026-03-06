@@ -110,6 +110,13 @@ export function MapContainer() {
         maxZoom={18}
         reuseMaps
         boxZoom={false}
+        onLoad={(e) => {
+          const map = e.target;
+          map.on("styleimagemissing", (e) => {
+            console.warn(`Map style image missing: ${e.id}`);
+            // We can add a fallback empty image here if needed to stop the error
+          });
+        }}
       >
         <NavigationControl position="bottom-right" />
         <AttributionControl position="bottom-left" />
