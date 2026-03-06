@@ -242,9 +242,9 @@ function CardInner({
                       e.stopPropagation();
                       toggleExpand();
                     }}
-                    className="h-9 w-9 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white hover:bg-black/80 flex items-center justify-center transition-all active:scale-90 shadow-lg"
+                    className="h-10 w-10 rounded-full bg-black border border-white/20 text-white hover:bg-zinc-900 flex items-center justify-center transition-all active:scale-90 shadow-xl"
                   >
-                    <X size={15} />
+                    <X size={20} />
                   </button>
                 </div>
 
@@ -588,7 +588,7 @@ export function PlaceDetailCard() {
   if (!isPanelOpen || !selectedPlaceId) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-100 pointer-events-none w-full max-w-[95vw] md:max-w-none flex justify-center">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none w-full max-w-[95vw] md:max-w-none flex justify-center">
       <div className="pointer-events-auto">
         <Expandable initialExpanded={false}>
           {({ isExpanded, toggleExpand }) => (

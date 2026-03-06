@@ -15,14 +15,14 @@ export default function ExplorationPage() {
       </main>
 
       {/* Floating Filters - right below navbar */}
-      <div className="absolute top-[82px] left-0 right-0 z-105 pointer-events-none">
+      <div className="absolute top-[82px] left-0 right-0 z-20 pointer-events-none">
         <div className="pointer-events-auto py-1.5">
           <FilterBar />
         </div>
       </div>
 
       {/* Floating Place Detail Card */}
-      <div className="z-110">
+      <div className="z-30">
         <PlaceDetailCard />
       </div>
     </div>

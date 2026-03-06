@@ -44,7 +44,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-6 left-6 right-6 z-110 flex justify-between items-center pointer-events-none">
+      <nav className="fixed top-6 left-6 right-6 z-40 flex justify-between items-center pointer-events-none">
         {/* Logo */}
         <div className="pointer-events-auto">
           <Link
