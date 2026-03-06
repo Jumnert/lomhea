@@ -377,9 +377,6 @@ export default function LandingPage() {
             className="flex items-center gap-2 magnetic-item"
             data-strength="15"
           >
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-              <IconMapPin className="text-black" size={18} />
-            </div>
             <span className="font-bold text-xl tracking-tighter dark:text-white">
               Lomhea
             </span>
@@ -516,7 +513,7 @@ export default function LandingPage() {
                   </span>
                   <div className="flex justify-start -ml-1.5">
                     <MorphingText
-                      texts={["JOURNEY", "WITH", "LOMHEA"]}
+                      texts={["EXPLORE", "CAMBODIA", "WITH", "LOMHEA"]}
                       className="text-white text-4xl font-bold tracking-tight sm:text-5xl text-left mx-0 h-12 md:h-16"
                     />
                   </div>

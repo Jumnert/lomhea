@@ -74,9 +74,6 @@ export default function FooterStandard() {
           {/* Company Info */}
           <div className="space-y-6 lg:col-span-2">
             <Link href="/" className="inline-flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
-                <IconMapPin className="text-black" size={24} />
-              </div>
               <span className="text-xl font-bold tracking-tighter text-white">
                 Lomhea
               </span>
