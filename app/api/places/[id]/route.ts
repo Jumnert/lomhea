@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+export const revalidate = 600; // Cache for 10 minutes
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -35,7 +37,11 @@ export async function GET(
       return NextResponse.json({ error: "Place not found" }, { status: 404 });
     }
 
-    return NextResponse.json(place);
+    return NextResponse.json(place, {
+      headers: {
+        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch place detail" },

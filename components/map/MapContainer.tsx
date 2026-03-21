@@ -50,6 +50,8 @@ export function MapContainer() {
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 
   const mapRef = React.useRef<MapRef>(null);

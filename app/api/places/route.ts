@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
+export const revalidate = 600; // Revalidate every 10 minutes
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
@@ -27,7 +29,11 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(places);
+    return NextResponse.json(places, {
+      headers: {
+        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch places" },
