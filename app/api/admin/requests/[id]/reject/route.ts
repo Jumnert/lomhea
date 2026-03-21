@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { pusherServer } from "@/lib/pusher";
 
 export async function POST(
   req: Request,
@@ -41,6 +42,26 @@ export async function POST(
         adminNote: reason,
       },
     });
+
+    // Create Notification
+    await (prisma as any).notification.create({
+      data: {
+        userId: request.userId,
+        title: "Update on Sugggestion",
+        message: `Your request for "${request.nameEn}" was not approved. Note: ${reason || "No reason provided"}`,
+        type: "REJECT",
+      },
+    });
+
+    // Trigger pusher
+    await pusherServer.trigger(
+      `notifications-${request.userId}`,
+      "new-notification",
+      {
+        title: "Update on Sugggestion",
+        message: `Your request for "${request.nameEn}" was not approved.`,
+      },
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

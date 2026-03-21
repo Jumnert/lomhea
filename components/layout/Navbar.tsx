@@ -32,6 +32,7 @@ import { ProfileDialog } from "@/components/modals/ProfileDialog";
 
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useWebHaptics } from "web-haptics/react";
+import { NotificationBell } from "./NotificationBell";
 
 export function Navbar() {
   const router = useRouter();
@@ -93,6 +94,9 @@ export function Navbar() {
               <Moon size={16} className="text-zinc-600" />
             )}
           </Button>
+
+          {/* Real-time Notifications */}
+          {session && <NotificationBell />}
 
           {/* Auth */}
           {session ? (

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { pusherServer } from "@/lib/pusher";
 
 export async function POST(
   req: Request,
@@ -91,7 +92,28 @@ export async function POST(
           isVerified: true,
         } as any,
       });
+
+      // 3. Create Notification
+      await (tx as any).notification.create({
+        data: {
+          userId: request.userId,
+          title: "Location Approved! 🎉",
+          message: `Your suggestion for "${request.nameEn}" has been approved and added to the map.`,
+          type: "APPROVE",
+          link: `/`, // Link to map
+        },
+      });
     });
+
+    // 4. Trigger pusher
+    await pusherServer.trigger(
+      `notifications-${request.userId}`,
+      "new-notification",
+      {
+        title: "Location Approved! 🎉",
+        message: `Your suggestion for "${request.nameEn}" has been approved and added to the map.`,
+      },
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
