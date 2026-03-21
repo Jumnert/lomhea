@@ -47,7 +47,8 @@ export async function POST(request: Request) {
     headers: await headers(),
   });
 
-  if (!session || session.user.role !== "ADMIN") {
+  const allowedRoles = ["ADMIN", "MODERATOR", "CONTRIBUTOR"];
+  if (!session || !allowedRoles.includes((session.user as any).role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

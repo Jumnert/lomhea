@@ -58,7 +58,8 @@ export async function PATCH(
     headers: await headers(),
   });
 
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const allowedRoles = ["ADMIN", "MODERATOR"];
+  if (!session || !allowedRoles.includes((session.user as any).role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -89,7 +90,8 @@ export async function DELETE(
     headers: await headers(),
   });
 
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const allowedRoles = ["ADMIN", "MODERATOR"];
+  if (!session || !allowedRoles.includes((session.user as any).role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
