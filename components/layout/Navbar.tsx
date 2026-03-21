@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Moon,
   Sun,
+  Menu,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -95,90 +96,88 @@ export function Navbar() {
             )}
           </Button>
 
-          {/* Real-time Notifications */}
-          {session && <NotificationBell />}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Real-time Notifications */}
+            {session && <NotificationBell />}
 
-          {/* Auth */}
-          {session ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-10 rounded-full p-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md shadow-xl border border-white/20 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-900"
+            {/* Auth / Menu */}
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full p-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md shadow-xl border border-white/20 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-900"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage
+                        src={session.user.image || ""}
+                        alt={session.user.name || "User"}
+                      />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
+                        {session.user.name
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  className="w-56 rounded-2xl p-2 shadow-2xl border-zinc-100 dark:border-zinc-800"
+                  align="end"
+                  sideOffset={8}
                 >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage
-                      src={session.user.image || ""}
-                      alt={session.user.name || "User"}
-                    />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-                      {session.user.name
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
+                  <DropdownMenuLabel className="font-normal p-3">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-bold leading-none">
+                        {session.user.name}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground truncate">
+                        {session.user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
 
-              <DropdownMenuContent
-                className="w-56 rounded-2xl p-2 shadow-2xl border-zinc-100 dark:border-zinc-800"
-                align="end"
-                sideOffset={8}
-                forceMount
-              >
-                <DropdownMenuLabel className="font-normal p-3">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-bold leading-none">
-                      {session.user.name}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground truncate">
-                      {session.user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    className="rounded-xl py-2.5 cursor-pointer"
-                    onClick={() => setIsProfileOpen(true)}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    className="rounded-xl py-2.5 cursor-pointer"
-                    asChild
-                  >
-                    <Link href="/favorites">
-                      <Heart className="mr-2 h-4 w-4" />
-                      <span>Favorites</span>
-                    </Link>
-                  </DropdownMenuItem>
-
-                  {["ADMIN", "MODERATOR", "CONTRIBUTOR"].includes(
-                    (session.user as any).role,
-                  ) && (
-                    <DropdownMenuItem
-                      className="rounded-xl py-2.5 cursor-pointer text-primary focus:text-primary focus:bg-primary/5"
-                      asChild
-                    >
-                      <Link href="/admin">
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        <span>Admin Panel</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Mobile-Only Toggles */}
-                  <div className="md:hidden">
-                    <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
                     <DropdownMenuItem
                       className="rounded-xl py-2.5 cursor-pointer"
+                      onClick={() => setIsProfileOpen(true)}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="rounded-xl py-2.5 cursor-pointer"
+                      asChild
+                    >
+                      <Link href="/favorites">
+                        <Heart className="mr-2 h-4 w-4" />
+                        <span>Favorites</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    {["ADMIN", "MODERATOR", "CONTRIBUTOR"].includes(
+                      (session.user as any).role,
+                    ) && (
+                      <DropdownMenuItem
+                        className="rounded-xl py-2.5 cursor-pointer text-primary focus:text-primary focus:bg-primary/5"
+                        asChild
+                      >
+                        <Link href="/admin">
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                          <span>Admin Panel</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+
+                    {/* Mobile-Only Toggles */}
+                    <DropdownMenuItem
+                      className="rounded-xl py-2.5 cursor-pointer md:hidden"
                       onClick={() => {
                         trigger(30);
                         setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -196,45 +195,107 @@ export function Navbar() {
                         </>
                       )}
                     </DropdownMenuItem>
-                    <div className="px-2 py-1.5">
+                    <div className="md:hidden px-2 py-1.5 border-t border-zinc-100 dark:border-white/5 mt-1">
                       <LanguageSwitcher />
                     </div>
+                  </DropdownMenuGroup>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    className="rounded-xl py-2.5 cursor-pointer text-rose-500 focus:bg-rose-50 dark:focus:bg-rose-900/20 focus:text-rose-600"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              !isPending && (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="rounded-xl bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-white/20 dark:border-zinc-800/50"
+                    >
+                      <Link href="/login">Log in</Link>
+                    </Button>
+                    <Button
+                      asChild
+                      className="rounded-xl shadow-lg shadow-primary/20"
+                    >
+                      <Link href="/register">Sign up</Link>
+                    </Button>
                   </div>
-                </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+                  {/* Mobile Burger for Guest */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="sm:hidden rounded-2xl w-10 h-10 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md shadow-xl border border-white/20 dark:border-zinc-800/50"
+                      >
+                        <Menu size={20} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      className="w-56 rounded-2xl p-2 shadow-2xl border-zinc-100 dark:border-zinc-800 mr-6"
+                      align="end"
+                      sideOffset={8}
+                    >
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          className="rounded-xl py-2.5 cursor-pointer"
+                          asChild
+                        >
+                          <Link href="/login">Log in</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="rounded-xl py-2.5 cursor-pointer"
+                          asChild
+                        >
+                          <Link href="/register">Sign up</Link>
+                        </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  className="rounded-xl py-2.5 cursor-pointer text-rose-500 focus:bg-rose-50 dark:focus:bg-rose-900/20 focus:text-rose-600"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            !isPending && (
-              <div className="flex items-center gap-2">
-                <Button
-                  asChild
-                  variant="ghost"
-                  className="rounded-xl bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-white/20 dark:border-zinc-800/50 hidden sm:flex"
-                >
-                  <Link href="/login">Log in</Link>
-                </Button>
-                <Button
-                  asChild
-                  className="rounded-xl shadow-lg shadow-primary/20"
-                >
-                  <Link href="/register">Sign up</Link>
-                </Button>
-              </div>
-            )
-          )}
+                        <DropdownMenuSeparator />
 
-          <div className="hidden md:block">
-            <LanguageSwitcher />
+                        <DropdownMenuItem
+                          className="rounded-xl py-2.5 cursor-pointer"
+                          onClick={() => {
+                            trigger(30);
+                            setTheme(
+                              resolvedTheme === "dark" ? "light" : "dark",
+                            );
+                          }}
+                        >
+                          {resolvedTheme === "dark" ? (
+                            <>
+                              <Sun className="mr-2 h-4 w-4 text-amber-500" />
+                              <span>Light Mode</span>
+                            </>
+                          ) : (
+                            <>
+                              <Moon className="mr-2 h-4 w-4 text-zinc-500" />
+                              <span>Dark Mode</span>
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <div className="px-2 py-1.5">
+                          <LanguageSwitcher />
+                        </div>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )
+            )}
+
+            <div className="hidden md:block">
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
       </nav>

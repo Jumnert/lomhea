@@ -28,6 +28,7 @@ import FeatureSteps from "@/components/mvpblocks/feature-2";
 import FooterStandard from "@/components/mvpblocks/footer-standard";
 import Testimonials from "@/components/mvpblocks/testimonials-marquee";
 import Globe3D from "@/components/mvpblocks/3dglobe";
+import ScrollCarousel from "@/components/landing/ScrollCarousel";
 
 const LOGOS = [
   {
@@ -321,25 +322,8 @@ export default function LandingPage() {
         />
       </section>
 
-      {/* Featured Destinations Carousel */}
-      <section id="destinations" className="py-32">
-        <div className="container mx-auto px-6 mb-16">
-          <h2 className="text-3xl md:text-5xl font-black mb-4 text-zinc-900">
-            Curated Collections
-          </h2>
-          <p className="text-zinc-500 max-w-xl font-medium">
-            Carefully selected experiences that capture the essence of
-            Cambodia's diverse landscape.
-          </p>
-        </div>
-
-        <Carousel
-          items={DESTINATIONS.map((dest, index) => (
-            <Card key={dest.title} card={dest} index={index} />
-          ))}
-          initialScroll={0}
-        />
-      </section>
+      {/* Featured Destinations — Scroll-Pinned Carousel */}
+      <ScrollCarousel />
 
       {/* Features Section */}
       <section id="features">
