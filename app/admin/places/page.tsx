@@ -114,7 +114,7 @@ export default function AdminPlacesPage() {
       <div className="mx-auto max-w-6xl w-full space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter uppercase tracking-wide">
+            <h1 className="text-3xl font-black tracking-tighter uppercase">
               Locations
             </h1>
             <p className="text-muted-foreground text-sm font-medium">
@@ -230,7 +230,7 @@ export default function AdminPlacesPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-3xl border-none shadow-3xl p-8">
                             <AlertDialogHeader>
-                              <AlertDialogTitle className="text-2xl font-black tracking-tighter uppercase tracking-wide">
+                              <AlertDialogTitle className="text-2xl font-black tracking-tighter uppercase">
                                 Are you sure?
                               </AlertDialogTitle>
                               <AlertDialogDescription className="font-medium text-zinc-500 text-base mt-2">

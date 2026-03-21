@@ -123,9 +123,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
-
-declare module "better-auth" {
-  interface User {
-    role: "USER" | "CONTRIBUTOR" | "MODERATOR" | "ADMIN";
-  }
-}
+export type User = typeof auth.$Infer.Session.user;
