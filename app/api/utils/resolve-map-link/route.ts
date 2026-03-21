@@ -2,34 +2,30 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    // 1. Robust Body Parsing
     let url = "";
     try {
       const body = await req.json();
       url = body.url;
     } catch (e) {
-      // Fallback for text/plain
       const text = await req.text();
       try {
         const parsed = JSON.parse(text);
         url = parsed.url;
       } catch (e2) {
-        // Last ditch: check if URL is in parameters
-        const { searchParams } = new URL(req.url);
-        url = searchParams.get("url") || "";
+        return NextResponse.json(
+          { error: "Invalid request body" },
+          { status: 400 },
+        );
       }
     }
 
     if (!url)
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
 
-    // Use a Mobile User-Agent (less likely to see bot-checks/consent walls)
     const mobileUA =
       "Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36";
 
-    console.log(`Resolving: ${url}`);
-
-    // 2. Follow redirects with a Mobile UA
+    // 1. Follow Redirects to the end
     let currentUrl = url;
     let finalHtml = "";
     try {
@@ -44,40 +40,35 @@ export async function POST(req: Request) {
       });
       currentUrl = res.url;
       finalHtml = await res.text();
-      console.log(`Resolved to: ${currentUrl.substring(0, 100)}...`);
     } catch (e) {
-      console.error("Fetch failed:", e);
+      console.error("Fetch failure:", e);
     }
 
-    // 3. Extraction logic (Same as before but refined)
-    // A. URL Check
-    const urlAt = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (urlAt) {
-      const lat = parseFloat(urlAt[1]);
-      const lng = parseFloat(urlAt[2]);
-      const isPP =
-        Math.abs(lat - 11.544) < 0.005 || Math.abs(lat - 11.669) < 0.005;
-      if (!isPP) {
-        return NextResponse.json({
-          lat: urlAt[1],
-          lng: urlAt[2],
-          resolvedUrl: currentUrl,
-          method: "url_at",
-        });
-      }
+    // Extraction helper
+    const isCambodia = (lat: number, lng: number) =>
+      lat > 9.5 && lat < 15 && lng > 102 && lng < 108;
+    const isCityCenter = (lat: number, lng: number) => {
+      // Broaden city center filter to include common fallback area
+      const pp =
+        Math.abs(lat - 11.544) < 0.005 && Math.abs(lng - 104.89) < 0.005;
+      const pp2 =
+        Math.abs(lat - 11.669) < 0.005 && Math.abs(lng - 104.93) < 0.005;
+      const pp3 = Math.abs(lat - 11.56) < 0.01 && Math.abs(lng - 104.91) < 0.01;
+      return pp || pp2 || pp3;
+    };
+
+    const candidates: { lat: string; lng: string; method: string }[] = [];
+
+    // Strategy A: URL check
+    const urlMatches = [
+      currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/),
+      currentUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/),
+    ];
+    for (const m of urlMatches) {
+      if (m) candidates.push({ lat: m[1], lng: m[2], method: "url_param" });
     }
 
-    const urlProto = currentUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (urlProto) {
-      return NextResponse.json({
-        lat: urlProto[1],
-        lng: urlProto[2],
-        resolvedUrl: currentUrl,
-        method: "url_proto",
-      });
-    }
-
-    // B. Embed Fallback (Very reliable if we have a query)
+    // Strategy B: EMBED check
     const searchParams = new URL(currentUrl).searchParams;
     const q = searchParams.get("q") || searchParams.get("query");
     if (q) {
@@ -87,60 +78,69 @@ export async function POST(req: Request) {
       });
       const embedHtml = await embedRes.text();
 
-      // Exact result match: ["0x...", "Place Name", [lat, lng]]
+      // Match 1: Named initEmbed entry
       const initMatch = embedHtml.match(
         /\["0x[0-9a-f]+:[0-9a-f]+",\s*"[^"]*",\s*\[(-?\d+\.\d+),\s*(-?\d+\.\d+)\]/,
       );
-      if (initMatch) {
-        return NextResponse.json({
+      if (initMatch)
+        candidates.push({
           lat: initMatch[1],
           lng: initMatch[2],
-          resolvedUrl: currentUrl,
           method: "embed_init",
+        });
+
+      // Match 2: Broad lat,lng text scan (Plus Codes often look like this)
+      const textMatches = [
+        ...embedHtml.matchAll(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/g),
+      ];
+      for (const m of textMatches) {
+        candidates.push({ lat: m[1], lng: m[2], method: "embed_text_scan" });
+      }
+    }
+
+    // Strategy C: HTML deep scan
+    const htmlMatches = [
+      ...finalHtml.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g),
+      ...finalHtml.matchAll(
+        /\[\s*0\s*,\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/g,
+      ),
+      ...finalHtml.matchAll(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/g),
+    ];
+    for (const m of htmlMatches) {
+      if (m[2] && m[1]) {
+        // Some patterns are [lng, lat], some are [lat, lng]. We'll test both later.
+        candidates.push({ lat: m[1], lng: m[2], method: "html_pair_A" });
+        candidates.push({ lat: m[2], lng: m[1], method: "html_pair_B" });
+      }
+    }
+
+    // Select the best candidate
+    for (const cand of candidates) {
+      const lat = parseFloat(cand.lat);
+      const lng = parseFloat(cand.lng);
+      if (isCambodia(lat, lng) && !isCityCenter(lat, lng)) {
+        return NextResponse.json({
+          lat: cand.lat,
+          lng: cand.lng,
+          resolvedUrl: currentUrl,
+          method: cand.method,
         });
       }
     }
 
-    // C. HTML Deep Scan (Protobufs and JSON triplets)
-    const triplets = [
-      ...finalHtml.matchAll(
-        /\[\s*0\s*,\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/g,
-      ),
-    ];
-    for (const t of triplets) {
-      const lat = parseFloat(t[2]);
-      const lng = parseFloat(t[1]);
-      if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
-        const isPP =
-          Math.abs(lat - 11.544) < 0.01 || Math.abs(lat - 11.669) < 0.01;
-        if (!isPP) {
-          return NextResponse.json({
-            lat: t[2],
-            lng: t[1],
-            method: "html_triplet",
-          });
-        }
-      }
+    // Final Fallback: If we only found Phnom Penh, return it instead of 404
+    const anyPP = candidates.find((c) =>
+      isCambodia(parseFloat(c.lat), parseFloat(c.lng)),
+    );
+    if (anyPP) {
+      return NextResponse.json({
+        lat: anyPP.lat,
+        lng: anyPP.lng,
+        resolvedUrl: currentUrl,
+        method: anyPP.method + "_fallback",
+      });
     }
 
-    const protos = [...finalHtml.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
-    if (protos.length > 0) {
-      // Return the first valid one
-      for (const p of protos) {
-        const lat = parseFloat(p[1]);
-        const isPP =
-          Math.abs(lat - 11.544) < 0.01 || Math.abs(lat - 11.669) < 0.01;
-        if (!isPP)
-          return NextResponse.json({
-            lat: p[1],
-            lng: p[2],
-            method: "html_proto",
-          });
-      }
-    }
-
-    // Final strategy: If we have an FTID but no coords, we could log it.
-    // For now, return the last fallback or 404
     return NextResponse.json(
       { error: "Resolution failed", resolvedUrl: currentUrl },
       { status: 404 },
