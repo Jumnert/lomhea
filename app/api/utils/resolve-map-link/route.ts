@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-    // 1. Follow redirects to getting the "Final" Google Maps URL
+    // 1. Follow redirects
     let currentUrl = url;
     let iterations = 0;
     while (iterations < 10) {
@@ -20,7 +20,6 @@ export async function POST(req: Request) {
       });
       const location = res.headers.get("location");
       if (!location) {
-        // Try GET if HEAD fails to redirect
         const getRes = await fetch(currentUrl, {
           method: "GET",
           redirect: "manual",
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
       iterations++;
     }
 
-    // 2. Strategy A: Check URL for direct coordinates (The most accurate)
+    // 2. Direct Protobuf Search
     const directLat = currentUrl.match(/!3d(-?\d+\.\d+)/);
     const directLng = currentUrl.match(/!4d(-?\d+\.\d+)/);
     if (directLat && directLng) {
@@ -51,24 +50,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const viewportMatch = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (viewportMatch) {
-      const lat = parseFloat(viewportMatch[1]);
-      const lng = parseFloat(viewportMatch[2]);
-      // Avoid Phnom Penh default if possible, but better than nothing
-      const isPP = Math.abs(lat - 11.544) < 0.005;
-      if (!isPP) {
-        return NextResponse.json({
-          lat: viewportMatch[1],
-          lng: viewportMatch[2],
-          resolvedUrl: currentUrl,
-          method: "url_viewport",
-        });
-      }
-    }
-
-    // 3. Strategy B: EMBED Fallback (High reliability for search results)
-    // If it's a search URL or we haven't found good coords yet, try the embed endpoint
+    // 3. Strategy: EMBED Fetch (The most reliable for shared searches)
     try {
       const searchUrl = new URL(currentUrl);
       const query =
@@ -81,21 +63,53 @@ export async function POST(req: Request) {
         });
         const embedHtml = await embedRes.text();
 
-        // Embed pages often contain coordinates in a simple [lat, lng] array in scripts
-        const embedCoords = embedHtml.match(/(-?\d+\.\d+),(-?\d+\.\d+)/);
-        if (embedCoords) {
-          const lat = parseFloat(embedCoords[1]);
-          const lng = parseFloat(embedCoords[2]);
-          // Bounds check for Cambodia
-          if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
-            const isPP = Math.abs(lat - 11.544) < 0.005;
-            if (!isPP) {
+        const candidates: { lat: string; lng: string; method: string }[] = [];
+
+        // Pattern: [ "0x...", "Place Name", [lat, lng], ... ] (Very reliable in initEmbed)
+        const initEmbedResult = embedHtml.match(
+          /\["0x[0-9a-f]+:[0-9a-f]+",\s*"[^"]*",\s*\[(-?\d+\.\d+),\s*(-?\d+\.\d+)\]/,
+        );
+        if (initEmbedResult) {
+          candidates.push({
+            lat: initEmbedResult[1],
+            lng: initEmbedResult[2],
+            method: "embed_initembed",
+          });
+        }
+
+        // Broad scan for any [lat, lng] pairs in the HTML
+        const broadScan = embedHtml.matchAll(
+          /\[(-?\d+\.\d+),\s*(-?\d+\.\d+)\]/g,
+        );
+        for (const match of broadScan) {
+          candidates.push({
+            lat: match[1],
+            lng: match[2],
+            method: "embed_broad",
+          });
+          candidates.push({
+            lat: match[2],
+            lng: match[1],
+            method: "embed_broad_reverse",
+          });
+        }
+
+        for (const cand of candidates) {
+          const lat = parseFloat(cand.lat);
+          const lng = parseFloat(cand.lng);
+          if (lat > 9.5 && lat < 15 && lng > 102 && lng < 108) {
+            // Improved Blacklist: Specifically avoid the "Default Phnom Penh Viewport"
+            // Google often provides 11.5 ... or 11.66 as city defaults
+            const isPPDefault =
+              Math.abs(lat - 11.544) < 0.005 || Math.abs(lat - 11.669) < 0.005;
+
+            if (!isPPDefault) {
               return NextResponse.json({
-                lat: embedCoords[1],
-                lng: embedCoords[2],
+                lat: cand.lat,
+                lng: cand.lng,
                 resolvedUrl: currentUrl,
                 scraped: true,
-                method: "embed_scan",
+                method: cand.method,
               });
             }
           }
@@ -105,58 +119,37 @@ export async function POST(req: Request) {
       console.error("Embed fallback failed:", e);
     }
 
-    // 4. Strategy C: Deep Scrape the original page
+    // 4. Final Fallback (deep scrape)
     try {
       const pageRes = await fetch(currentUrl, {
         headers: { "User-Agent": userAgent },
       });
       const html = await pageRes.text();
 
-      const candidates: { lat: string; lng: string; method: string }[] = [];
-
       // Look for !3d/!4d pairs
-      const lRegex = /!3d(-?\d+\.\d+)/g;
-      const lnRegex = /!4d(-?\d+\.\d+)/g;
-      let m;
       const lats = [];
       const lngs = [];
-      while ((m = lRegex.exec(html))) lats.push(m[1]);
-      while ((m = lnRegex.exec(html))) lngs.push(m[1]);
+      const latM = html.matchAll(/!3d(-?\d+\.\d+)/g);
+      const lngM = html.matchAll(/!4d(-?\d+\.\d+)/g);
+      for (const m of latM) lats.push(m[1]);
+      for (const m of lngM) lngs.push(m[1]);
+
       for (let i = 0; i < Math.min(lats.length, lngs.length); i++) {
-        candidates.push({
-          lat: lats[i],
-          lng: lngs[i],
-          method: "html_protobuf",
-        });
-      }
-
-      // Look for triplets [0, lng, lat]
-      const triplets = html.matchAll(
-        /\[\s*0\s*,\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/g,
-      );
-      for (const t of triplets) {
-        candidates.push({ lat: t[2], lng: t[1], method: "html_triplet" });
-      }
-
-      for (const cand of candidates) {
-        const lat = parseFloat(cand.lat);
-        const lng = parseFloat(cand.lng);
-        if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
-          const isPP = Math.abs(lat - 11.544) < 0.005;
-          if (!isPP) {
+        const lat = parseFloat(lats[i]);
+        const lng = parseFloat(lngs[i]);
+        if (lat > 9.5 && lat < 15 && lng > 102 && lng < 108) {
+          if (Math.abs(lat - 11.544) > 0.005) {
             return NextResponse.json({
-              lat: cand.lat,
-              lng: cand.lng,
+              lat: lats[i],
+              lng: lngs[i],
               resolvedUrl: currentUrl,
               scraped: true,
-              method: cand.method,
+              method: "deep_protobuf",
             });
           }
         }
       }
-    } catch (e) {
-      console.error("Deep scrape failed:", e);
-    }
+    } catch (e) {}
 
     return NextResponse.json({ error: "Resolution failed" }, { status: 404 });
   } catch (error) {
