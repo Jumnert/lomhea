@@ -6,22 +6,21 @@ export async function POST(req: Request) {
     if (!url)
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
 
-    // 1. Follow redirects with a browser-like User-Agent
-    let currentUrl = url;
-    let iterations = 0;
     const userAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+    // 1. Follow redirects to getting the "Final" Google Maps URL
+    let currentUrl = url;
+    let iterations = 0;
     while (iterations < 10) {
       const res = await fetch(currentUrl, {
         method: "HEAD",
         redirect: "manual",
         headers: { "User-Agent": userAgent },
       });
-
       const location = res.headers.get("location");
       if (!location) {
-        // If HEAD fails to provide a location, try a GET (some shortlinks require it)
+        // Try GET if HEAD fails to redirect
         const getRes = await fetch(currentUrl, {
           method: "GET",
           redirect: "manual",
@@ -40,86 +39,128 @@ export async function POST(req: Request) {
       iterations++;
     }
 
-    // 2. Coordinate Extraction
-    // !3d = latitude, !4d = longitude — the ACTUAL pin (most precise)
-    // @lat,lng = viewport/camera center — can be several km off
-    const latMatch = currentUrl.match(/!3d(-?\d+\.\d+)/);
-    const lngMatch = currentUrl.match(/!4d(-?\d+\.\d+)/);
-    if (latMatch && lngMatch) {
+    // 2. Strategy A: Check URL for direct coordinates (The most accurate)
+    const directLat = currentUrl.match(/!3d(-?\d+\.\d+)/);
+    const directLng = currentUrl.match(/!4d(-?\d+\.\d+)/);
+    if (directLat && directLng) {
       return NextResponse.json({
-        lat: latMatch[1],
-        lng: lngMatch[1],
+        lat: directLat[1],
+        lng: directLng[1],
         resolvedUrl: currentUrl,
+        method: "url_protobuf",
       });
     }
 
-    // Fallback patterns (less precise)
-    const fallbackPatterns = [
-      { re: /@(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false }, // viewport center
-      { re: /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
-      { re: /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
-      { re: /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
-    ];
-    for (const { re, swap } of fallbackPatterns) {
-      const match = currentUrl.match(re);
-      if (match) {
+    const viewportMatch = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (viewportMatch) {
+      const lat = parseFloat(viewportMatch[1]);
+      const lng = parseFloat(viewportMatch[2]);
+      // Avoid Phnom Penh default if possible, but better than nothing
+      const isPP = Math.abs(lat - 11.544) < 0.005;
+      if (!isPP) {
         return NextResponse.json({
-          lat: swap ? match[2] : match[1],
-          lng: swap ? match[1] : match[2],
+          lat: viewportMatch[1],
+          lng: viewportMatch[2],
           resolvedUrl: currentUrl,
+          method: "url_viewport",
         });
       }
     }
 
-    // 3. Last Resort: Scrape from the page content (e.g. for Search result pages)
+    // 3. Strategy B: EMBED Fallback (High reliability for search results)
+    // If it's a search URL or we haven't found good coords yet, try the embed endpoint
+    try {
+      const searchUrl = new URL(currentUrl);
+      const query =
+        searchUrl.searchParams.get("q") || searchUrl.searchParams.get("query");
+
+      if (query) {
+        const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+        const embedRes = await fetch(embedUrl, {
+          headers: { "User-Agent": userAgent },
+        });
+        const embedHtml = await embedRes.text();
+
+        // Embed pages often contain coordinates in a simple [lat, lng] array in scripts
+        const embedCoords = embedHtml.match(/(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (embedCoords) {
+          const lat = parseFloat(embedCoords[1]);
+          const lng = parseFloat(embedCoords[2]);
+          // Bounds check for Cambodia
+          if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
+            const isPP = Math.abs(lat - 11.544) < 0.005;
+            if (!isPP) {
+              return NextResponse.json({
+                lat: embedCoords[1],
+                lng: embedCoords[2],
+                resolvedUrl: currentUrl,
+                scraped: true,
+                method: "embed_scan",
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Embed fallback failed:", e);
+    }
+
+    // 4. Strategy C: Deep Scrape the original page
     try {
       const pageRes = await fetch(currentUrl, {
         headers: { "User-Agent": userAgent },
       });
       const html = await pageRes.text();
 
-      // In page HTML, also try extracting !3d/!4d independently
-      const htmlLatMatch = html.match(/!3d(-?\d+\.\d+)/);
-      const htmlLngMatch = html.match(/!4d(-?\d+\.\d+)/);
-      if (htmlLatMatch && htmlLngMatch) {
-        return NextResponse.json({
-          lat: htmlLatMatch[1],
-          lng: htmlLngMatch[1],
-          resolvedUrl: currentUrl,
-          scraped: true,
+      const candidates: { lat: string; lng: string; method: string }[] = [];
+
+      // Look for !3d/!4d pairs
+      const lRegex = /!3d(-?\d+\.\d+)/g;
+      const lnRegex = /!4d(-?\d+\.\d+)/g;
+      let m;
+      const lats = [];
+      const lngs = [];
+      while ((m = lRegex.exec(html))) lats.push(m[1]);
+      while ((m = lnRegex.exec(html))) lngs.push(m[1]);
+      for (let i = 0; i < Math.min(lats.length, lngs.length); i++) {
+        candidates.push({
+          lat: lats[i],
+          lng: lngs[i],
+          method: "html_protobuf",
         });
       }
 
-      // Last resort: @lat,lng from HTML (viewport center)
-      const atMatch = html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-      if (atMatch) {
-        const lat = parseFloat(atMatch[1]);
-        const lng = parseFloat(atMatch[2]);
-        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-          return NextResponse.json({
-            lat: atMatch[1],
-            lng: atMatch[2],
-            resolvedUrl: currentUrl,
-            scraped: true,
-          });
+      // Look for triplets [0, lng, lat]
+      const triplets = html.matchAll(
+        /\[\s*0\s*,\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\]/g,
+      );
+      for (const t of triplets) {
+        candidates.push({ lat: t[2], lng: t[1], method: "html_triplet" });
+      }
+
+      for (const cand of candidates) {
+        const lat = parseFloat(cand.lat);
+        const lng = parseFloat(cand.lng);
+        if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
+          const isPP = Math.abs(lat - 11.544) < 0.005;
+          if (!isPP) {
+            return NextResponse.json({
+              lat: cand.lat,
+              lng: cand.lng,
+              resolvedUrl: currentUrl,
+              scraped: true,
+              method: cand.method,
+            });
+          }
         }
       }
     } catch (e) {
-      console.error("Scraping failed:", e);
+      console.error("Deep scrape failed:", e);
     }
 
-    return NextResponse.json(
-      {
-        error: "Could not extract coordinates from resolved URL or page body",
-        resolvedUrl: currentUrl,
-      },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Resolution failed" }, { status: 404 });
   } catch (error) {
-    console.error("Link resolution error:", error);
-    return NextResponse.json(
-      { error: "Failed to resolve link" },
-      { status: 500 },
-    );
+    console.error("Resolve Error:", error);
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }

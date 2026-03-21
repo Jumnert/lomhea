@@ -1,5 +1,5 @@
 // Run with: node debug-coord.mjs <google-maps-url>
-// e.g. node debug-coord.mjs "https://maps.app.goo.gl/abc123"
+// e.g. node debug-coord.mjs "https://maps.app.goo.gl/hog4vhUFfPB1SpfU7?g_st=ic"
 
 const url = process.argv[2];
 if (!url) {
@@ -44,47 +44,83 @@ while (iterations < 10) {
   iterations++;
 }
 
-console.log("\n=== FINAL URL ===\n" + currentUrl);
+console.log("\n=== SCRAPING HTML ===");
+const pageRes = await fetch(currentUrl, {
+  headers: { "User-Agent": userAgent },
+});
+const html = await pageRes.text();
 
-const patterns = [
-  {
-    label: "!3d(lat)!4d(lng) — ACTUAL PIN",
-    re: /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-    swap: false,
-  },
-  {
-    label: "!4d(lng)!3d(lat) — ACTUAL PIN reversed",
-    re: /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/,
-    swap: true,
-  },
-  {
-    label: "@lat,lng — VIEWPORT CENTER",
-    re: /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-    swap: false,
-  },
-  {
-    label: "?query=lat,lng",
-    re: /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    swap: false,
-  },
-  { label: "?q=lat,lng", re: /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
-  { label: "?ll=lat,lng", re: /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
-];
+const candidates = [];
 
-console.log("\n=== PATTERN MATCHES IN URL ===");
-let found = false;
-for (const { label, re, swap } of patterns) {
-  const match = currentUrl.match(re);
-  if (match) {
-    const lat = swap ? match[2] : match[1];
-    const lng = swap ? match[1] : match[2];
-    console.log(`✅ ${label}`);
-    console.log(`   RAW: match[1]=${match[1]}, match[2]=${match[2]}`);
-    console.log(`   → lat=${lat}, lng=${lng}`);
-    if (!found) {
-      console.log("   ^^^^ THIS IS WHAT GETS USED ^^^^");
-      found = true;
-    }
+// Method 0: Login Continue
+const loginMatch = html.match(/ServiceLogin\?.*?continue=([^"& ]+)/);
+if (loginMatch) {
+  const decodedContinue = decodeURIComponent(loginMatch[1]);
+  console.log("Found Login Redirect URL!");
+  const subLat = decodedContinue.match(/!3d(-?\d+\.\d+)/);
+  const subLng = decodedContinue.match(/!4d(-?\d+\.\d+)/);
+  if (subLat && subLng) {
+    candidates.push({
+      lat: subLat[1],
+      lng: subLng[1],
+      method: "login_continue_protobuf",
+    });
+  }
+  const subAt = decodedContinue.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (subAt) {
+    candidates.push({
+      lat: subAt[1],
+      lng: subAt[2],
+      method: "login_continue_at",
+    });
   }
 }
-if (!found) console.log("❌ No URL pattern matched.");
+
+// Extract all !3d/!4d/!2d
+const allLats = html.match(/!3d(-?\d+\.\d+)/g) || [];
+const allLngs = html.match(/(!4d|!2d)(-?\d+\.\d+)/g) || [];
+for (let i = 0; i < Math.min(allLats.length, allLngs.length); i++) {
+  candidates.push({
+    lat: allLats[i].replace("!3d", ""),
+    lng: allLngs[i].replace(/!4d|!2d/, ""),
+    method: "protobuf_scan",
+  });
+}
+
+const triplets = html.matchAll(/\[\d+,\s*(-?\d+\.\d+),\s*(-?\d+\.\d+)\]/g);
+for (const match of triplets) {
+  candidates.push({ lat: match[1], lng: match[2], method: "json_trip_A" });
+  candidates.push({ lat: match[2], lng: match[1], method: "json_trip_B" });
+}
+
+console.log("\n=== CANDIDATES FOUND ===");
+candidates.forEach((c, i) => {
+  const isPP = Math.abs(parseFloat(c.lat) - 11.544) < 0.005;
+  console.log(
+    `[${i}] ${c.method}: ${c.lat}, ${c.lng} ${isPP ? "(BLACK-LISTED)" : "(VALID)"}`,
+  );
+});
+
+const best =
+  candidates.find((c) => {
+    const lat = parseFloat(c.lat);
+    const lng = parseFloat(c.lng);
+    const inCambodia = lat > 9.5 && lat < 15 && lng > 102 && lng < 108;
+    const isPP =
+      Math.abs(lat - 11.544) < 0.005 && Math.abs(lng - 104.89) < 0.005;
+    return inCambodia && !isPP;
+  }) || candidates[0];
+
+if (best) {
+  console.log(
+    "\n✅ BEST RESULT: " +
+      best.lat +
+      ", " +
+      best.lng +
+      " (" +
+      best.method +
+      ")",
+  );
+} else {
+  console.log("\n❌ NO COORDS FOUND");
+}

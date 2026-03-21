@@ -102,7 +102,7 @@ export default function ScrollCarousel() {
     <section
       ref={sectionRef}
       id="destinations"
-      className="relative w-full h-screen overflow-hidden bg-white"
+      className="relative w-full h-screen overflow-hidden bg-whiten"
     >
       {/* Horizontal card track */}
       <div
