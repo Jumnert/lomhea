@@ -42,50 +42,18 @@ import { cn } from "@/lib/utils";
 import { Check, ClipboardPaste } from "lucide-react";
 import { useWebHaptics } from "web-haptics/react";
 
-const PROVINCES = [
-  "Phnom Penh",
-  "Siem Reap",
-  "Sihanoukville",
-  "Battambang",
-  "Kampot",
-  "Koh Kong",
-  "Kep",
-  "Mondulkiri",
-  "Ratanakiri",
-  "Preah Vihear",
-  "Kandal",
-  "Kampong Cham",
-  "Kampong Chhnang",
-  "Kampong Speu",
-  "Kampong Thom",
-  "Kratie",
-  "Odar Meanchey",
-  "Pailin",
-  "Pursat",
-  "Prey Veng",
-  "Stung Treng",
-  "Svay Rieng",
-  "Takeo",
-  "Tboung Khmum",
-];
+import { PROVINCES, CATEGORIES } from "@/lib/constants";
 
-const CATEGORIES = [
-  "Temple",
-  "Beach",
-  "Nature",
-  "Waterfall",
-  "Market",
-  "Museum",
-  "Adventure",
-];
-
-export function AddPlaceDialog() {
+export function AddPlaceDialog({
+  trigger: customTrigger,
+}: {
+  trigger?: React.ReactNode;
+}) {
   const { trigger } = useWebHaptics();
   const [open, setOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [formData, setFormData] = useState({
     name: "",
     nameKh: "",
@@ -113,7 +81,10 @@ export function AddPlaceDialog() {
         return;
       }
 
-      if (formData.googleMapUrl.includes("goo.gl")) {
+      if (
+        formData.googleMapUrl.includes("goo.gl") ||
+        formData.googleMapUrl.includes("t.ly")
+      ) {
         setIsResolving(true);
         try {
           const res = await fetch("/api/utils/resolve-map-link", {
@@ -249,10 +220,13 @@ export function AddPlaceDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="font-bold bg-zinc-900 text-white rounded-2xl h-11 px-6 shadow-xl shadow-zinc-200 transition-all hover:scale-105 active:scale-95">
-          <Plus className="mr-2 h-4 w-4" /> Add New Place
-        </Button>
+        {customTrigger || (
+          <Button className="font-bold bg-zinc-900 text-white rounded-2xl h-11 px-6 shadow-xl shadow-zinc-200 transition-all hover:scale-105 active:scale-95">
+            <Plus className="mr-2 h-4 w-4" /> Add New Place
+          </Button>
+        )}
       </DialogTrigger>
+
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl shadow-3xl">
         <div className="bg-zinc-900 p-8 text-white relative overflow-hidden text-left">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />

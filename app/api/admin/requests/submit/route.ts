@@ -24,6 +24,8 @@ export async function POST(req: Request) {
       description,
       reason,
       images,
+      lat: bodyLat,
+      lng: bodyLng,
     } = body;
 
     const isAdminOrMod =
@@ -49,39 +51,42 @@ export async function POST(req: Request) {
         });
 
         // Resolve coordinates
-        let lat = 0;
-        let lng = 0;
-        let finalUrl = googleMapUrl;
-        const coordinateRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-        let match = finalUrl.match(coordinateRegex);
+        let lat = bodyLat ? parseFloat(bodyLat) : 0;
+        let lng = bodyLng ? parseFloat(bodyLng) : 0;
 
-        if (
-          !match &&
-          (finalUrl.includes("goo.gl") || finalUrl.includes("t.ly"))
-        ) {
-          try {
-            let currentUrl = finalUrl;
-            for (let i = 0; i < 5; i++) {
-              const res = await fetch(currentUrl, {
-                method: "HEAD",
-                redirect: "manual",
-              });
-              const loc = res.headers.get("location");
-              if (!loc) break;
-              currentUrl = loc.startsWith("/")
-                ? new URL(loc, currentUrl).href
-                : loc;
+        if (lat === 0 && lng === 0) {
+          let finalUrl = googleMapUrl;
+          const coordinateRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+          let match = finalUrl.match(coordinateRegex);
+
+          if (
+            !match &&
+            (finalUrl.includes("goo.gl") || finalUrl.includes("t.ly"))
+          ) {
+            try {
+              let currentUrl = finalUrl;
+              for (let i = 0; i < 5; i++) {
+                const res = await fetch(currentUrl, {
+                  method: "HEAD",
+                  redirect: "manual",
+                });
+                const loc = res.headers.get("location");
+                if (!loc) break;
+                currentUrl = loc.startsWith("/")
+                  ? new URL(loc, currentUrl).href
+                  : loc;
+              }
+              finalUrl = currentUrl;
+              match = finalUrl.match(coordinateRegex);
+            } catch (e) {
+              console.error("Auto-approval resolution failed:", e);
             }
-            finalUrl = currentUrl;
-            match = finalUrl.match(coordinateRegex);
-          } catch (e) {
-            console.error("Auto-approval resolution failed:", e);
           }
-        }
 
-        if (match) {
-          lat = parseFloat(match[1]);
-          lng = parseFloat(match[2]);
+          if (match) {
+            lat = parseFloat(match[1]);
+            lng = parseFloat(match[2]);
+          }
         }
 
         await (tx as any).place.create({

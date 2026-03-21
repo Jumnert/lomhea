@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,52 +37,17 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import { useWebHaptics } from "web-haptics/react";
-
-const provinces = [
-  "Phnom Penh",
-  "Siem Reap",
-  "Sihanoukville",
-  "Battambang",
-  "Kampot",
-  "Koh Kong",
-  "Kep",
-  "Mondulkiri",
-  "Ratanakiri",
-  "Preah Vihear",
-  "Kandal",
-  "Kampong Cham",
-  "Kampong Chhnang",
-  "Kampong Speu",
-  "Kampong Thom",
-  "Kratie",
-  "Odar Meanchey",
-  "Pailin",
-  "Pursat",
-  "Prey Veng",
-  "Stung Treng",
-  "Svay Rieng",
-  "Takeo",
-  "Tboung Khmum",
-];
-
-const categories = [
-  "Temple",
-  "Beach",
-  "Nature",
-  "Waterfall",
-  "Market",
-  "Museum",
-  "Adventure",
-  "Cultural",
-  "City",
-  "Religious",
-];
+import { PROVINCES, CATEGORIES } from "@/lib/constants";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function SuggestPlaceDialog() {
   const { trigger } = useWebHaptics();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     nameEn: "",
@@ -93,9 +58,47 @@ export function SuggestPlaceDialog() {
     description: "",
     reason: "",
     images: [] as string[],
+    lat: "",
+    lng: "",
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isResolving, setIsResolving] = useState(false);
+
+  // Extract lat/lng from Google Maps URL automatically
+  useEffect(() => {
+    async function resolve() {
+      if (!formData.googleMapUrl) return;
+
+      const expandedRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = formData.googleMapUrl.match(expandedRegex);
+      if (match) {
+        setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+        return;
+      }
+
+      if (
+        formData.googleMapUrl.includes("goo.gl") ||
+        formData.googleMapUrl.includes("t.ly")
+      ) {
+        setIsResolving(true);
+        try {
+          const res = await fetch("/api/utils/resolve-map-link", {
+            method: "POST",
+            body: JSON.stringify({ url: formData.googleMapUrl }),
+          });
+          const data = await res.json();
+          if (data.lat && data.lng) {
+            setFormData((p) => ({ ...p, lat: data.lat, lng: data.lng }));
+          }
+        } catch (e) {
+          console.error("Resolution failed:", e);
+        } finally {
+          setIsResolving(false);
+        }
+      }
+    }
+    resolve();
+  }, [formData.googleMapUrl]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -172,6 +175,8 @@ export function SuggestPlaceDialog() {
         description: "",
         reason: "",
         images: [],
+        lat: "",
+        lng: "",
       });
     } catch (error: any) {
       toast.error(error.message);
@@ -268,7 +273,7 @@ export function SuggestPlaceDialog() {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {provinces.map((p) => (
+                    {PROVINCES.map((p) => (
                       <SelectItem key={p} value={p}>
                         {p}
                       </SelectItem>
@@ -295,7 +300,7 @@ export function SuggestPlaceDialog() {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {categories.map((c) => (
+                    {CATEGORIES.map((c) => (
                       <SelectItem key={c} value={c}>
                         {c}
                       </SelectItem>
@@ -343,6 +348,31 @@ export function SuggestPlaceDialog() {
                   Paste
                 </button>
               </div>
+              <p
+                className={cn(
+                  "text-[10px] ml-1 transition-all duration-300 mt-1",
+                  isResolving
+                    ? "text-amber-500 font-bold animate-pulse"
+                    : formData.lat && formData.googleMapUrl
+                      ? "text-emerald-600 font-bold"
+                      : "text-zinc-400",
+                )}
+              >
+                {isResolving ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 size={10} className="animate-spin" />
+                    Resolving location...
+                  </span>
+                ) : formData.lat && formData.googleMapUrl ? (
+                  <span className="flex items-center gap-1.5">
+                    <Check size={10} strokeWidth={4} />
+                    Pin Pointed: {Number(formData.lat).toFixed(4)},{" "}
+                    {Number(formData.lng).toFixed(4)}
+                  </span>
+                ) : (
+                  "Paste link to automatically resolve coordinates."
+                )}
+              </p>
             </div>
 
             <div className="space-y-2">

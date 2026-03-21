@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
   Menu,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,6 +30,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { useMapStore } from "@/stores/mapStore";
 import { useTheme } from "next-themes";
 import { SuggestPlaceDialog } from "@/components/modals/SuggestPlaceDialog";
+import { AddPlaceDialog } from "@/components/ui/add-place-dialog";
 import { ProfileDialog } from "@/components/modals/ProfileDialog";
 
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -75,7 +77,22 @@ export function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <SuggestPlaceDialog />
+            {["ADMIN", "MODERATOR"].includes((session?.user as any)?.role) ? (
+              <AddPlaceDialog
+                trigger={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-xl h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ml-auto mr-0 text-zinc-400 hover:text-primary"
+                    title="Add a new place"
+                  >
+                    <Plus size={18} />
+                  </Button>
+                }
+              />
+            ) : (
+              <SuggestPlaceDialog />
+            )}
           </div>
 
           {/* Dark/Light Mode Toggle - Hidden on Mobile */}
