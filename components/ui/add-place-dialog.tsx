@@ -113,16 +113,46 @@ export function AddPlaceDialog({
           if (data.lat && data.lng) {
             setFormData((p) => ({ ...p, lat: data.lat, lng: data.lng }));
           } else if (data.resolvedUrl) {
-            // Local fallback extraction if server only got the final URL
+            // Server found the final URL but couldn't scrape it (likely blocked on Vercel)
+            const resolvedUrl = data.resolvedUrl;
+
+            // Try client-side extraction from URL first
             const urlPatterns = [
               /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
               /@(-?\d+\.\d+),(-?\d+\.\d+)/,
             ];
+            let found = false;
             for (const p of urlPatterns) {
-              const m = data.resolvedUrl.match(p);
+              const m = resolvedUrl.match(p);
               if (m) {
                 setFormData((p) => ({ ...p, lat: m[1], lng: m[2] }));
+                found = true;
                 break;
+              }
+            }
+
+            // If it's a search URL (common for Plus Codes), try client-side embed fetch
+            if (!found) {
+              try {
+                const urlObj = new URL(resolvedUrl);
+                const q =
+                  urlObj.searchParams.get("q") ||
+                  urlObj.searchParams.get("query");
+                if (q) {
+                  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed&hl=en`;
+                  const embedRes = await fetch(embedUrl);
+                  const html = await embedRes.text();
+                  const match = html.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+                  if (match) {
+                    setFormData((p) => ({
+                      ...p,
+                      lat: match[1],
+                      lng: match[2],
+                    }));
+                  }
+                }
+              } catch (err) {
+                console.error("Client-side fallback resolution failed:", err);
               }
             }
           }
