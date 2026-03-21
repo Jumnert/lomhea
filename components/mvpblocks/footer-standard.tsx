@@ -19,37 +19,23 @@ const data = () => ({
     product: [
       { name: "Interactive Map", href: "#explore" },
       { name: "Collections", href: "#destinations" },
-      { name: "Pricing", href: "#pricing" },
-      { name: "Reviews", href: "#reviews" },
     ],
     company: [
-      { name: "About", href: "/about" },
-      { name: "Blog", href: "/blog" },
-      { name: "Careers", href: "/careers" },
+      { name: "About Us", href: "/about" },
       { name: "Contact", href: "/contact" },
-    ],
-    resources: [
-      { name: "Documentation", href: "/docs" },
-      { name: "API Reference", href: "/api" },
-      { name: "Community", href: "/community" },
-      { name: "Status", href: "/status" },
     ],
     legal: [
       { name: "Privacy", href: "/privacy" },
       { name: "Terms", href: "/terms" },
-      { name: "Cookie Policy", href: "/cookies" },
     ],
   },
   socialLinks: [
     { icon: Twitter, label: "Twitter", href: "#" },
-    { icon: Github, label: "GitHub", href: "#" },
-    { icon: MessageCircle, label: "Discord", href: "#" },
     { icon: Linkedin, label: "LinkedIn", href: "#" },
   ],
   bottomLinks: [
     { href: "/privacy", label: "Privacy Policy" },
     { href: "/terms", label: "Terms of Service" },
-    { href: "/cookies", label: "Cookie Policy" },
   ],
 });
 
@@ -66,15 +52,22 @@ export default function FooterStandard() {
   if (!mounted) return null;
 
   return (
-    <footer className="mt-20 w-full bg-black border-t border-white/5">
-      <div className="h-px w-full bg-linear-to-r from-transparent via-white/10 to-transparent" />
-      <div className="relative w-full px-5">
+    <footer className="mt-20 w-full bg-white border-t border-zinc-100">
+      <div className="h-px w-full bg-linear-to-r from-transparent via-zinc-200 to-transparent" />
+      <div className="relative w-full px-5 overflow-hidden min-h-[750px]">
+        {/* Background Text */}
+        <div className="absolute -bottom-16 left-0 right-0 pointer-events-none select-none opacity-[0.18] flex justify-center w-full overflow-hidden">
+          <h1 className="text-[23vw] font-black leading-none tracking-tighter whitespace-nowrap bg-linear-to-b from-zinc-800 to-zinc-400 bg-clip-text text-transparent">
+            LOMHEA
+          </h1>
+        </div>
+
         {/* Top Section */}
         <div className="container m-auto grid grid-cols-1 gap-12 py-12 md:grid-cols-2 lg:grid-cols-5">
           {/* Company Info */}
           <div className="space-y-6 lg:col-span-2">
             <Link href="/" className="inline-flex items-center gap-3">
-              <span className="text-xl font-bold tracking-tighter text-white">
+              <span className="text-xl font-black tracking-tighter text-zinc-900">
                 Lomhea
               </span>
             </Link>
@@ -129,46 +122,44 @@ export default function FooterStandard() {
 
           {/* Navigation Links */}
           <div className="grid w-full grid-cols-2 items-start justify-between gap-8 px-5 lg:col-span-3">
-            {(["product", "company", "resources", "legal"] as const).map(
-              (section) => (
-                <div key={section} className="w-full">
-                  <h3 className="border-primary mb-4 -ml-5 border-l-2 pl-5 text-sm font-semibold tracking-wider uppercase">
-                    {section.charAt(0).toUpperCase() + section.slice(1)}
-                  </h3>
-                  <ul className="space-y-3">
-                    {data().navigation[section].map((item) => (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className="group text-muted-foreground hover:text-foreground decoration-primary -ml-5 inline-flex items-center gap-2 underline-offset-8 transition-all duration-500 hover:pl-5 hover:underline"
-                        >
-                          <ArrowDownLeft className="text-primary rotate-225 opacity-30 transition-all duration-500 group-hover:scale-150 group-hover:opacity-100 sm:group-hover:rotate-225 md:rotate-0" />
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ),
-            )}
+            {(["product", "company", "legal"] as const).map((section) => (
+              <div key={section} className="w-full">
+                <h3 className="mb-4 -ml-5 border-l-2 border-zinc-900 pl-5 text-sm font-black tracking-wider uppercase text-zinc-900">
+                  {section.charAt(0).toUpperCase() + section.slice(1)}
+                </h3>
+                <ul className="space-y-3">
+                  {data().navigation[section].map((item) => (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className="group text-zinc-500 hover:text-zinc-900 -ml-5 inline-flex items-center gap-2 transition-all duration-500 hover:pl-5 font-bold"
+                      >
+                        <ArrowDownLeft className="text-zinc-400 rotate-225 opacity-30 transition-all duration-500 group-hover:scale-150 group-hover:opacity-100 sm:group-hover:rotate-225 md:rotate-0" />
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Bottom Section */}
         <div className="animate-rotate-3d via-primary h-px w-full bg-linear-to-r from-transparent to-transparent" />
-        <div className="text-muted-foreground container m-auto flex flex-col items-center justify-between gap-4 p-4 text-xs md:flex-row md:px-0 md:text-sm">
+        <div className="text-zinc-400 container m-auto flex flex-col items-center justify-between gap-4 p-4 text-xs md:flex-row md:px-0 md:text-sm font-bold">
           <p className="">
             &copy; {currentYear} Lomhea Team | All rights reserved
           </p>
           <div className="flex items-center gap-4">
             {data().bottomLinks.map(({ href, label }) => (
-              <Link key={href} href={href} className="hover:text-foreground">
+              <Link key={href} href={href} className="hover:text-zinc-900">
                 {label}
               </Link>
             ))}
           </div>
         </div>
-        <span className="from-primary/20 absolute inset-x-0 bottom-0 left-0 -z-10 h-1/3 w-full bg-linear-to-t" />
+        <span className="from-zinc-50 absolute inset-x-0 bottom-0 left-0 -z-10 h-1/3 w-full bg-linear-to-t" />
       </div>
 
       {/* Animations */}

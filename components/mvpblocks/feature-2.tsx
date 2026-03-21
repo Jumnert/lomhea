@@ -72,10 +72,10 @@ export default function FeatureSteps() {
       <div className="mx-auto w-full max-w-7xl">
         <div className="relative mx-auto mb-12 max-w-2xl sm:text-center">
           <div className="relative z-10">
-            <h2 className="font-geist text-3xl font-bold tracking-tighter md:text-4xl lg:text-5xl dark:text-white">
+            <h2 className="text-3xl font-black tracking-tighter md:text-4xl lg:text-5xl text-zinc-900">
               The Nomad's Toolkit
             </h2>
-            <p className="font-geist text-foreground/60 mt-3 dark:text-neutral-400">
+            <p className="text-zinc-500 mt-3 font-medium">
               Everything you need to plan your journey, from community insights
               to advanced offline maps.
             </p>
@@ -101,18 +101,18 @@ export default function FeatureSteps() {
                   className={cn(
                     "flex h-12 w-12 items-center justify-center rounded-full border-2 md:h-14 md:w-14",
                     index === currentFeature
-                      ? "border-white bg-white/10 text-white scale-110 [box-shadow:0_0_15px_rgba(255,255,255,0.3)]"
-                      : "border-muted-foreground bg-muted",
+                      ? "border-zinc-900 bg-zinc-900 text-white scale-110 shadow-lg"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-400",
                   )}
                 >
                   {feature.icon}
                 </motion.div>
 
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold md:text-2xl">
+                  <h3 className="text-xl font-black md:text-2xl text-zinc-900">
                     {feature.title}
                   </h3>
-                  <p className="text-muted-foreground text-sm md:text-base">
+                  <p className="text-zinc-500 text-sm md:text-base font-medium">
                     {feature.content}
                   </p>
                 </div>
