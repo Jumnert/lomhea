@@ -13,11 +13,22 @@ import {
   UtensilsCrossed,
   Navigation,
   Info,
+  Flag,
+  ShieldAlert,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Expandable,
   ExpandableCard,
@@ -46,6 +57,16 @@ import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -69,6 +90,78 @@ function CardInner({
   const [isContentReady, setIsContentReady] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+  const [reportData, setReportData] = useState({
+    reason: "Incorrect Info",
+    details: "",
+  });
+  const [reviewData, setReviewData] = useState({ rating: 5, comment: "" });
+
+  function ReviewItem({ review }: { review: any }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const isLong = review.comment?.length > 150;
+
+    return (
+      <div className="space-y-2.5 pb-4 border-b border-zinc-100 dark:border-zinc-800 last:border-0 last:pb-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-100 dark:border-zinc-800 bg-zinc-50">
+              <Image
+                src={
+                  review.user?.image ||
+                  `https://avatar.vercel.sh/${review.user?.name}`
+                }
+                alt={review.user?.name || "User"}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                {review.user?.name || "Lomhea Traveler"}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-medium">
+                {new Date(review.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                size={10}
+                className={cn(
+                  i < review.rating
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-zinc-200 dark:text-zinc-700",
+                )}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="pl-10">
+          <p
+            className={cn(
+              "text-xs leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium",
+              !isExpanded && "line-clamp-3",
+            )}
+          >
+            {review.comment}
+          </p>
+          {isLong && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-[10px] font-black uppercase tracking-widest text-primary mt-2 hover:underline"
+            >
+              {isExpanded ? "Show Less" : "View More"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (isExpanded) {
@@ -97,6 +190,43 @@ function CardInner({
       return res.json();
     },
     enabled: !!session,
+  });
+
+  const reportMutation = useMutation({
+    mutationFn: async (data: typeof reportData) => {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        body: JSON.stringify({ ...data, placeId: selectedPlaceId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to submit");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Report submitted to moderation");
+      setIsReportOpen(false);
+      setReportData({ reason: "Incorrect Info", details: "" });
+    },
+    onError: () => toast.error("Failed to submit report"),
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: async (data: typeof reviewData) => {
+      const res = await fetch(`/api/places/${selectedPlaceId}/reviews`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to submit");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Review published! Thank you.");
+      queryClient.invalidateQueries({ queryKey: ["place", selectedPlaceId] });
+      setIsReviewOpen(false);
+      setReviewData({ rating: 5, comment: "" });
+    },
+    onError: () => toast.error("Failed to submit review"),
   });
 
   const isFavorited = selectedPlaceId
@@ -237,6 +367,95 @@ function CardInner({
                     )}
                   </button>
 
+                  <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
+                    <DialogTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!session) {
+                            triggerLoginAlert();
+                            return;
+                          }
+                        }}
+                        className="h-9 w-9 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white hover:bg-rose-600 transition-all active:scale-90 flex items-center justify-center shadow-lg"
+                        title="Report an issue"
+                      >
+                        <Flag size={14} />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-3xl max-w-[400px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                          <ShieldAlert className="text-rose-500" size={20} />
+                          Report a Problem
+                        </DialogTitle>
+                        <DialogDescription className="font-medium text-zinc-500">
+                          Help us keep the map accurate for everyone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4 text-left">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                            Common Issues
+                          </Label>
+                          <Select
+                            value={reportData.reason}
+                            onValueChange={(v) =>
+                              setReportData({ ...reportData, reason: v })
+                            }
+                          >
+                            <SelectTrigger className="rounded-xl h-11">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Incorrect Info">
+                                Incorrect Information
+                              </SelectItem>
+                              <SelectItem value="Closed">
+                                Place is Closed
+                              </SelectItem>
+                              <SelectItem value="Duplicate">
+                                Duplicate Entry
+                              </SelectItem>
+                              <SelectItem value="Inappropriate">
+                                Inappropriate Content
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                            Additional Context
+                          </Label>
+                          <Textarea
+                            placeholder="Tell us what's wrong..."
+                            className="rounded-2xl resize-none h-24 bg-zinc-50 border-zinc-100"
+                            value={reportData.details}
+                            onChange={(e) =>
+                              setReportData({
+                                ...reportData,
+                                details: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          className="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-2xl h-12 font-black uppercase tracking-widest"
+                          onClick={() => reportMutation.mutate(reportData)}
+                          disabled={reportMutation.isPending}
+                        >
+                          {reportMutation.isPending ? (
+                            <Loader2 className="animate-spin" size={16} />
+                          ) : (
+                            "Submit Report"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -327,7 +546,7 @@ function CardInner({
                       >
                         {/* Tab bar */}
                         <div className="px-4 pt-3 pb-0">
-                          <TabsList className="w-full grid grid-cols-3 h-9 bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1">
+                          <TabsList className="w-full grid grid-cols-4 h-9 bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1">
                             <TabsTrigger
                               value="detail"
                               className="rounded-lg text-[11px] font-semibold flex items-center gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
@@ -348,6 +567,13 @@ function CardInner({
                             >
                               <UtensilsCrossed size={11} />
                               Eat
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="reviews"
+                              className="rounded-lg text-[11px] font-semibold flex items-center gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
+                            >
+                              <Star size={11} />
+                              Reviews
                             </TabsTrigger>
                           </TabsList>
                         </div>
@@ -394,51 +620,134 @@ function CardInner({
                           {/* SLEEP */}
                           <TabsContent
                             value="accommodation"
-                            className="mt-0 px-4 pb-4 space-y-2 outline-none"
+                            className="mt-0 px-4 pb-4 space-y-4 outline-none"
                           >
                             {place?.accommodations?.length ? (
-                              place.accommodations.map((acc) => (
-                                <div
-                                  key={acc.id}
-                                  className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 hover:border-primary/30 transition-all group"
-                                >
-                                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                    <Bed size={16} className="text-primary" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
-                                      {acc.name}
-                                    </p>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                      {acc.type} · {acc.priceRange}
-                                    </p>
-                                  </div>
-                                  {acc.bookingUrl && (
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7 rounded-full shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      asChild
-                                    >
-                                      <a
-                                        href={acc.bookingUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                              <div className="space-y-2">
+                                {place.accommodations.map((acc) => (
+                                  <div
+                                    key={acc.id}
+                                    className="flex items-center gap-3 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 hover:border-primary/30 transition-all group"
+                                  >
+                                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                      <Bed size={16} className="text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
+                                        {acc.name}
+                                      </p>
+                                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {acc.type} · {acc.priceRange}
+                                      </p>
+                                    </div>
+                                    {acc.bookingUrl && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-full shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        asChild
                                       >
-                                        <ExternalLink size={12} />
-                                      </a>
-                                    </Button>
-                                  )}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="flex flex-col items-center justify-center py-10 text-zinc-400 gap-2">
-                                <Bed size={26} strokeWidth={1.5} />
-                                <p className="text-xs">
-                                  No accommodations listed yet
-                                </p>
+                                        <a
+                                          href={acc.bookingUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <ExternalLink size={12} />
+                                        </a>
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            )}
+                            ) : null}
+
+                            {/* External Booking Partners */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Separator className="flex-1" />
+                                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">
+                                  Find Stays Nearby
+                                </span>
+                                <Separator className="flex-1" />
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-2">
+                                <a
+                                  href={`https://www.agoda.com/search?city=${encodeURIComponent(place?.name + " " + place?.province)}&cid=1844104`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-[10px] font-black text-white">
+                                      ag
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                                        Search on Agoda
+                                      </span>
+                                      <span className="text-[10px] text-zinc-400 font-medium">
+                                        Best rates for Cambodia
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-zinc-300 group-hover:text-primary transition-colors"
+                                  />
+                                </a>
+
+                                <a
+                                  href={`https://www.trip.com/hotels/list?keyword=${encodeURIComponent(place?.name + " " + place?.province)}&locale=en-XX`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">
+                                      tp
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                                        Search on Trip.com
+                                      </span>
+                                      <span className="text-[10px] text-zinc-400 font-medium">
+                                        Global hotel inventory
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-zinc-300 group-hover:text-blue-500 transition-colors"
+                                  />
+                                </a>
+
+                                <a
+                                  href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(place?.name + " " + place?.province)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-blue-800 hover:shadow-lg hover:shadow-blue-800/5 transition-all group"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-800 flex items-center justify-center text-[10px] font-black text-white">
+                                      bk
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                                        Search on Booking.com
+                                      </span>
+                                      <span className="text-[10px] text-zinc-400 font-medium">
+                                        Verified guest reviews
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-zinc-300 group-hover:text-blue-800 transition-colors"
+                                  />
+                                </a>
+                              </div>
+                            </div>
                           </TabsContent>
 
                           {/* EAT */}
@@ -474,6 +783,32 @@ function CardInner({
                                 <p className="text-xs">
                                   No food spots listed yet
                                 </p>
+                              </div>
+                            )}
+                          </TabsContent>
+
+                          {/* REVIEWS */}
+                          <TabsContent
+                            value="reviews"
+                            className="mt-0 px-4 pb-4 space-y-4 outline-none"
+                          >
+                            {place?.reviews?.length ? (
+                              <div className="space-y-4">
+                                {place.reviews.map((review: any) => (
+                                  <ReviewItem key={review.id} review={review} />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-3">
+                                <Star size={32} strokeWidth={1} />
+                                <div className="text-center">
+                                  <p className="text-sm font-bold text-zinc-500">
+                                    No reviews yet
+                                  </p>
+                                  <p className="text-[10px] uppercase font-black tracking-widest mt-1 opacity-50">
+                                    Be the first to share your journey
+                                  </p>
+                                </div>
                               </div>
                             )}
                           </TabsContent>
@@ -513,21 +848,97 @@ function CardInner({
                             </a>
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          className="h-8 px-4 text-xs font-semibold rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!session) {
-                              triggerLoginAlert();
-                              return;
-                            }
-                            // Navigate to review or show review modal
-                            toast.info("Reviews coming soon!");
-                          }}
+                        <Dialog
+                          open={isReviewOpen}
+                          onOpenChange={setIsReviewOpen}
                         >
-                          Write a Review
-                        </Button>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              className="h-8 px-4 text-xs font-semibold rounded-full bg-zinc-900 text-white hover:bg-black transition-all"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!session) {
+                                  triggerLoginAlert();
+                                  return;
+                                }
+                              }}
+                            >
+                              Write a Review
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="rounded-3xl max-w-[400px]">
+                            <DialogHeader>
+                              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                <Star
+                                  className="text-amber-500 fill-amber-500"
+                                  size={20}
+                                />
+                                Rate Experience
+                              </DialogTitle>
+                              <DialogDescription className="font-medium text-zinc-500">
+                                Share your thoughts with the community.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-6 py-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <button
+                                    key={s}
+                                    onClick={() =>
+                                      setReviewData({
+                                        ...reviewData,
+                                        rating: s,
+                                      })
+                                    }
+                                    className="transition-transform active:scale-90 hover:scale-110"
+                                  >
+                                    <Star
+                                      size={32}
+                                      className={cn(
+                                        "transition-colors",
+                                        s <= reviewData.rating
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-zinc-200",
+                                      )}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="space-y-2 text-left">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                  Share your story
+                                </Label>
+                                <Textarea
+                                  placeholder="What did you love about this place?"
+                                  className="rounded-2xl resize-none h-32 bg-zinc-50 border-zinc-100"
+                                  value={reviewData.comment}
+                                  onChange={(e) =>
+                                    setReviewData({
+                                      ...reviewData,
+                                      comment: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                className="w-full bg-zinc-900 text-white rounded-2xl h-12 font-black uppercase tracking-widest shadow-xl shadow-zinc-100"
+                                onClick={() =>
+                                  reviewMutation.mutate(reviewData)
+                                }
+                                disabled={reviewMutation.isPending}
+                              >
+                                {reviewMutation.isPending ? (
+                                  <Loader2 className="animate-spin" size={16} />
+                                ) : (
+                                  "Publish Review"
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </ExpandableCardFooter>
                   </motion.div>

@@ -30,6 +30,8 @@ import { useTheme } from "next-themes";
 import { SuggestPlaceDialog } from "@/components/modals/SuggestPlaceDialog";
 import { ProfileDialog } from "@/components/modals/ProfileDialog";
 
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+
 export function Navbar() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
@@ -197,6 +199,8 @@ export function Navbar() {
               </div>
             )
           )}
+
+          <LanguageSwitcher />
         </div>
       </nav>
 

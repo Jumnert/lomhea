@@ -12,6 +12,17 @@ import {
   MobileNavMenu,
   MobileNavToggle,
 } from "@/components/ui/resizable-navbar";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useSession, signOut } from "@/lib/auth-client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User as UserIcon, Shield } from "lucide-react";
+import Link from "next/link";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import FeatureSteps from "@/components/mvpblocks/feature-2";
 import FooterStandard from "@/components/mvpblocks/footer-standard";
@@ -157,6 +168,7 @@ const DESTINATIONS = [
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session } = useSession();
 
   const NAV_LINKS = [
     { name: "Explore", link: "#explore" },
@@ -178,17 +190,65 @@ export default function LandingPage() {
             </span>
           </div>
           <NavItems items={NAV_LINKS} />
-          <div className="flex items-center gap-2">
-            <NavbarButton href="/login" variant="secondary">
-              Log in
-            </NavbarButton>
-            <NavbarButton
-              href="/register"
-              variant="dark"
-              className="rounded-full px-6"
-            >
-              Get Started
-            </NavbarButton>
+          <div className="flex items-center gap-3">
+            {!session ? (
+              <>
+                <NavbarButton href="/login" variant="secondary">
+                  Log in
+                </NavbarButton>
+                <NavbarButton
+                  href="/register"
+                  variant="dark"
+                  className="rounded-full px-6"
+                >
+                  Get Started
+                </NavbarButton>
+              </>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="focus:outline-none">
+                    <Avatar className="h-9 w-9 border-2 border-zinc-100 hover:border-zinc-900 transition-all">
+                      <AvatarImage src={session.user.image || undefined} />
+                      <AvatarFallback className="bg-zinc-100 text-[10px] font-black uppercase">
+                        {session.user.name?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 rounded-2xl p-2 font-bold"
+                >
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <UserIcon size={16} /> Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  {(session.user as any).role === "ADMIN" && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 cursor-pointer text-blue-600"
+                      >
+                        <Shield size={16} /> Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => signOut()}
+                    className="flex items-center gap-2 cursor-pointer text-rose-500"
+                  >
+                    <LogOut size={16} /> Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <LanguageSwitcher />
           </div>
         </NavBody>
 
@@ -207,6 +267,12 @@ export default function LandingPage() {
           </MobileNavHeader>
           <MobileNavMenu isOpen={isOpen} onClose={() => setIsOpen(false)}>
             <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-100">
+                <span className="text-sm font-black uppercase tracking-widest text-zinc-400">
+                  Language
+                </span>
+                <LanguageSwitcher />
+              </div>
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.name}

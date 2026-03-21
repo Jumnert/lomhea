@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
+      console.error("Upload failed: Unauthorized");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -17,33 +18,51 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
 
     if (!file) {
+      console.error("Upload failed: No file provided");
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    return new Promise<NextResponse>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            resource_type: "auto",
-            folder: "lomhea",
-          },
-          (error, result) => {
-            if (error) {
-              console.error("Cloudinary upload error:", error);
-              return resolve(
-                NextResponse.json({ error: "Upload failed" }, { status: 500 }),
-              );
-            }
-            return resolve(
-              NextResponse.json({ url: result?.secure_url }, { status: 200 }),
-            );
-          },
-        )
-        .end(buffer);
+    console.log("Cloudinary Config Status:", {
+      has_url: !!process.env.CLOUDINARY_URL,
+      cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: !!process.env.CLOUDINARY_API_KEY,
+      api_secret: !!process.env.CLOUDINARY_API_SECRET,
     });
+
+    console.log(
+      `Starting Cloudinary upload for file: ${file.name} (${file.size} bytes)`,
+    );
+
+    const uploadResult = await new Promise<{ url: string } | { error: string }>(
+      (resolve) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              resource_type: "auto",
+              folder: "lomhea",
+            },
+            (error, result) => {
+              if (error) {
+                console.error("Cloudinary upload error:", error);
+                resolve({ error: "Upload failed" });
+              } else {
+                console.log("Cloudinary upload success:", result?.secure_url);
+                resolve({ url: result?.secure_url as string });
+              }
+            },
+          )
+          .end(buffer);
+      },
+    );
+
+    if ("error" in uploadResult) {
+      return NextResponse.json({ error: uploadResult.error }, { status: 500 });
+    }
+
+    return NextResponse.json({ url: uploadResult.url }, { status: 200 });
   } catch (error) {
     console.error("Upload route error:", error);
     return NextResponse.json(

@@ -4,6 +4,7 @@ import { MapContainer } from "@/components/map/MapContainer";
 import { FilterBar } from "@/components/map/FilterBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
+import { MapSearchBar } from "@/components/map/MapSearchBar";
 
 export function ExplorePage() {
   return (
@@ -16,9 +17,14 @@ export function ExplorePage() {
         <MapContainer />
       </main>
 
-      {/* Floating Filters - right below navbar */}
-      <div className="absolute top-[82px] left-0 right-0 z-20 pointer-events-none">
-        <div className="pointer-events-auto py-1.5">
+      {/* Floating Filters + Search - right below navbar */}
+      <div className="absolute top-[72px] left-0 right-0 z-20 pointer-events-none">
+        <div className="pointer-events-auto px-4 pt-2 pb-1">
+          {/* Search Bar */}
+          <div className="max-w-sm mx-auto mb-2">
+            <MapSearchBar />
+          </div>
+          {/* Category filters */}
           <FilterBar />
         </div>
       </div>

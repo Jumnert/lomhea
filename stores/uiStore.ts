@@ -5,6 +5,8 @@ interface UIState {
   setPanelOpen: (open: boolean) => void;
   activeTab: "detail" | "accommodation" | "food";
   setActiveTab: (tab: "detail" | "accommodation" | "food") => void;
+  language: "EN" | "KH";
+  setLanguage: (lang: "EN" | "KH") => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -12,4 +14,6 @@ export const useUIStore = create<UIState>((set) => ({
   setPanelOpen: (open) => set({ isPanelOpen: open }),
   activeTab: "detail",
   setActiveTab: (tab) => set({ activeTab: tab }),
+  language: "EN",
+  setLanguage: (lang) => set({ language: lang }),
 }));

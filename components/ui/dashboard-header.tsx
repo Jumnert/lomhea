@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import { memo } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
+import { memo } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,7 +20,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from "@/components/ui/breadcrumb";
 import {
   Bell,
   Search,
@@ -27,7 +28,7 @@ import {
   Download,
   RefreshCw,
   MoreHorizontal,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface DashboardHeaderProps {
   searchQuery: string;
@@ -95,7 +96,7 @@ export const DashboardHeader = memo(
                 disabled={isRefreshing}
               >
                 <RefreshCw
-                  className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
                 />
                 Refresh
               </Button>
@@ -109,7 +110,7 @@ export const DashboardHeader = memo(
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onSearchChange('')}>
+                <DropdownMenuItem onClick={() => onSearchChange("")}>
                   <Search className="mr-2 h-4 w-4" />
                   Search
                 </DropdownMenuItem>
@@ -128,9 +129,11 @@ export const DashboardHeader = memo(
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
               <Bell className="h-4 w-4" />
             </Button>
+
+            <LanguageSwitcher />
           </motion.div>
         </div>
       </header>
@@ -138,4 +141,4 @@ export const DashboardHeader = memo(
   },
 );
 
-DashboardHeader.displayName = 'DashboardHeader';
+DashboardHeader.displayName = "DashboardHeader";

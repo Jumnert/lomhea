@@ -30,19 +30,25 @@ import {
   Moon,
   Sun,
   User,
+  MapPin,
+  Inbox,
+  AlertCircle,
 } from "lucide-react";
 
 const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, href: "#dashboard" },
-  { title: "Analytics", icon: BarChart3, href: "#analytics" },
-  { title: "Users", icon: Users, href: "#users" },
-  { title: "Content", icon: FileText, href: "#content" },
-  { title: "Activity", icon: Activity, href: "#activity" },
-  { title: "Database", icon: Database, href: "#database" },
-  { title: "Security", icon: Shield, href: "#security" },
-  { title: "Performance", icon: Zap, href: "#performance" },
-  { title: "Notifications", icon: Bell, href: "#notifications" },
-  { title: "Settings", icon: Settings, href: "#settings" },
+  { title: "Overview", icon: LayoutDashboard, href: "/admin" },
+  { title: "Users", icon: Users, href: "/admin/users" },
+  { title: "Places", icon: MapPin, href: "/admin/places" },
+  { title: "Requests", icon: Inbox, href: "/admin/requests" },
+  { title: "Reports", icon: AlertCircle, href: "/admin/reports" },
+  { title: "Reviews", icon: FileText, href: "/admin/reviews" },
+  { title: "Analytics", icon: BarChart3, href: "/admin/analytics" },
+  { title: "Activity", icon: Activity, href: "/admin/activity" },
+  { title: "Database", icon: Database, href: "/admin/database" },
+  { title: "Security", icon: Shield, href: "/admin/security" },
+  { title: "Performance", icon: Zap, href: "/admin/performance" },
+  { title: "Notifications", icon: Bell, href: "/admin/notifications" },
+  { title: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
 export const AdminSidebar = memo(() => {
@@ -102,14 +108,24 @@ export const AdminSidebar = memo(() => {
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? <Sun /> : <Moon />}
-              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              <span className="font-bold">
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link prefetch={false} href="/">
+                <LayoutDashboard className="rotate-180" />
+                <span className="font-bold">Head back home</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="#profile">
                 <User />
-                <span>Admin Profile</span>
+                <span className="font-bold">Admin Profile</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 import QueryProvider from "@/components/providers/QueryProvider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const kantumruy = localFont({
+  src: "../public/fonts/KantumruyPro-Medium.ttf",
+  variable: "--font-kantumruy",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -60,7 +65,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body
+        className={`${inter.variable} ${kantumruy.variable} font-sans antialiased`}
+      >
         <QueryProvider>
           {children}
           <Toaster position="top-center" richColors />

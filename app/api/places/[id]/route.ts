@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -37,6 +39,66 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch place detail" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const body = await request.json();
+
+  try {
+    const updatedPlace = await prisma.place.update({
+      where: { id },
+      data: body,
+    });
+
+    return NextResponse.json(updatedPlace);
+  } catch (error) {
+    console.error("Update place error:", error);
+    return NextResponse.json(
+      { error: "Failed to update place" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    await prisma.place.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete place error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete place" },
       { status: 500 },
     );
   }

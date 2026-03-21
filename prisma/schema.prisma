@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,158 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String?        @unique
+  image         String?
+  role          Role           @default(USER)
+  banned        Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  emailVerified Boolean        @default(false)
+  accounts      Account[]
+  favorites     Favorite[]
+  requests      PlaceRequest[]
+  reviews       Review[]
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  idToken               String?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  expiresAt  DateTime
+}
+
+model Place {
+  id             String          @id @default(cuid())
+  name           String
+  nameKh         String?
+  description    String?
+  lat            Float
+  lng            Float
+  category       String
+  province       String
+  isVerified     Boolean         @default(false)
+  images         String[]
+  rating         Float           @default(0)
+  reviewCount    Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  accommodations Accommodation[]
+  favorites      Favorite[]
+  foods          Food[]
+  reviews        Review[]
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  userId    String
+  placeId   String
+  reason    String
+  details   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Accommodation {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  priceRange String
+  bookingUrl String?
+  placeId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  place      Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+}
+
+model Food {
+  id         String   @id @default(cuid())
+  name       String
+  type       String
+  priceRange String
+  placeId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  place      Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  placeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, placeId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  userId    String
+  placeId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlaceRequest {
+  id           String        @id @default(cuid())
+  userId       String
+  nameEn       String
+  nameKh       String?
+  province     String
+  category     String
+  description  String
+  googleMapUrl String
+  reason       String
+  images       String[]
+  status       RequestStatus @default(PENDING)
+  adminNote    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id])
 }
 
 enum Role {
@@ -20,150 +169,4 @@ enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          Role      @default(USER)
-  banned        Boolean   @default(false)
-  sessions      Session[]
-  accounts      Account[]
-  
-  // App specific
-  favorites     Favorite[]
-  reviews       Review[]
-  requests      PlaceRequest[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  expiresAt DateTime
-  token     String   @unique
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Account {
-  id                    String    @id @default(cuid())
-  userId                String
-  accountId             String
-  providerId            String
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime @updatedAt
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Verification {
-  id         String   @id @default(cuid())
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-
-model Place {
-  id          String   @id @default(cuid())
-  name        String
-  nameKh      String?
-  description String?
-  lat         Float
-  lng         Float
-  category    String
-  province    String
-  isVerified  Boolean  @default(false)
-  images      String[] // Storing Cloudinary URLs directly as an array
-  rating      Float    @default(0)
-  reviewCount Int      @default(0)
-  
-  accommodations Accommodation[]
-  foods          Food[]
-  favorites      Favorite[]
-  reviews        Review[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Accommodation {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // Hotel, Guesthouse, etc.
-  priceRange  String   // e.g. "$10 - $30"
-  bookingUrl  String?
-  placeId     String
-  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Food {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // Restaurant, Street Food, etc.
-  priceRange  String
-  placeId     String
-  place       Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  placeId   String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, placeId])
-}
-
-model Review {
-  id        String   @id @default(cuid())
-  rating    Int
-  comment   String?
-  userId    String
-  placeId   String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model PlaceRequest {
-  id           String        @id @default(cuid())
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
-  nameEn       String
-  nameKh       String?
-  province     String
-  category     String
-  description  String
-  googleMapUrl String
-  reason       String
-  images       String[]      // Cloudinary URLs
-  status       RequestStatus @default(PENDING)
-  adminNote    String?       // rejection reason
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
 }
