@@ -106,11 +106,25 @@ export function AddPlaceDialog({
         try {
           const res = await fetch("/api/utils/resolve-map-link", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url: formData.googleMapUrl }),
           });
           const data = await res.json();
           if (data.lat && data.lng) {
             setFormData((p) => ({ ...p, lat: data.lat, lng: data.lng }));
+          } else if (data.resolvedUrl) {
+            // Local fallback extraction if server only got the final URL
+            const urlPatterns = [
+              /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+              /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+            ];
+            for (const p of urlPatterns) {
+              const m = data.resolvedUrl.match(p);
+              if (m) {
+                setFormData((p) => ({ ...p, lat: m[1], lng: m[2] }));
+                break;
+              }
+            }
           }
         } catch (e) {
           console.error("Resolution failed:", e);
