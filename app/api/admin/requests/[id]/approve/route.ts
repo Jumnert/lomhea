@@ -43,41 +43,72 @@ export async function POST(
         data: { status: "APPROVED" },
       });
 
-      // 2. Create the actual place
-      // Extract coordinates from googleMapUrl
+      // 2. Create the actual place — extract coordinates
+      // !3d = lat, !4d = lng (actual pin). @lat,lng is just viewport center.
       let lat = 0;
       let lng = 0;
       let finalUrl = request.googleMapUrl;
-      const coordinateRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      let match = finalUrl.match(coordinateRegex);
+
+      const extractCoords = (url: string) => {
+        const latM = url.match(/!3d(-?\d+\.\d+)/);
+        const lngM = url.match(/!4d(-?\d+\.\d+)/);
+        if (latM && lngM)
+          return { lat: parseFloat(latM[1]), lng: parseFloat(lngM[1]) };
+        const atM = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atM) return { lat: parseFloat(atM[1]), lng: parseFloat(atM[2]) };
+        const qM = url.match(/[?&](?:query|q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (qM) return { lat: parseFloat(qM[1]), lng: parseFloat(qM[2]) };
+        return null;
+      };
+
+      const direct = extractCoords(finalUrl);
+      if (direct) {
+        lat = direct.lat;
+        lng = direct.lng;
+      }
 
       if (
-        !match &&
-        (finalUrl.includes("goo.gl") || finalUrl.includes("t.ly"))
+        !lat &&
+        !lng &&
+        (finalUrl.includes("goo.gl") || finalUrl.includes("maps.app.goo.gl"))
       ) {
         try {
           let currentUrl = finalUrl;
+          const userAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
           for (let i = 0; i < 5; i++) {
             const res = await fetch(currentUrl, {
               method: "HEAD",
               redirect: "manual",
+              headers: { "User-Agent": userAgent },
             });
             const loc = res.headers.get("location");
-            if (!loc) break;
-            currentUrl = loc.startsWith("/")
-              ? new URL(loc, currentUrl).href
-              : loc;
+            if (!loc) {
+              const getRes = await fetch(currentUrl, {
+                method: "GET",
+                redirect: "manual",
+                headers: { "User-Agent": userAgent },
+              });
+              const getLoc = getRes.headers.get("location");
+              if (!getLoc) break;
+              currentUrl = getLoc.startsWith("/")
+                ? new URL(getLoc, currentUrl).href
+                : getLoc;
+            } else {
+              currentUrl = loc.startsWith("/")
+                ? new URL(loc, currentUrl).href
+                : loc;
+            }
           }
           finalUrl = currentUrl;
-          match = finalUrl.match(coordinateRegex);
+          const resolved = extractCoords(finalUrl);
+          if (resolved) {
+            lat = resolved.lat;
+            lng = resolved.lng;
+          }
         } catch (e) {
           console.error("Resolution failed during approval:", e);
         }
-      }
-
-      if (match) {
-        lat = parseFloat(match[1]);
-        lng = parseFloat(match[2]);
       }
 
       await (tx as any).place.create({
@@ -91,6 +122,7 @@ export async function POST(
           lat,
           lng,
           isVerified: true,
+          googleMapUrl: request.googleMapUrl,
         } as any,
       });
 
@@ -106,7 +138,7 @@ export async function POST(
       });
     });
 
-    // 4. Trigger pusher
+    // 4. Trigger pusher — notify user AND broadcast map update
     await pusherServer.trigger(
       `notifications-${request.userId}`,
       "new-notification",
@@ -115,6 +147,9 @@ export async function POST(
         message: `Your suggestion for "${request.nameEn}" has been approved and added to the map.`,
       },
     );
+
+    // Broadcast to all clients so the map auto-refreshes
+    await pusherServer.trigger("places", "places-updated", {});
 
     // 5. Trigger Web Push (Mobile/Desktop background)
     await sendPushNotification(request.userId, {

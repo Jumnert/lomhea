@@ -74,6 +74,7 @@ model Place {
   category       String
   province       String
   isVerified     Boolean         @default(false)
+  googleMapUrl   String?
   images         String[]
   rating         Float           @default(0)
   reviewCount    Int             @default(0)

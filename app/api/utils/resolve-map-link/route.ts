@@ -40,30 +40,32 @@ export async function POST(req: Request) {
       iterations++;
     }
 
-    // 2. Comprehensive Coordinate Extraction
-    const patterns = [
-      /@(-?\d+\.\d+),(-?\d+\.\d+)/, // standard @lat,lng
-      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // google !3d (lat) !4d (lng)
-      /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse !4d (lng) !3d (lat)
-      /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/, // query params (mobile)
-      /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q param (mobile)
-      /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll param
-    ];
+    // 2. Coordinate Extraction
+    // !3d = latitude, !4d = longitude — the ACTUAL pin (most precise)
+    // @lat,lng = viewport/camera center — can be several km off
+    const latMatch = currentUrl.match(/!3d(-?\d+\.\d+)/);
+    const lngMatch = currentUrl.match(/!4d(-?\d+\.\d+)/);
+    if (latMatch && lngMatch) {
+      return NextResponse.json({
+        lat: latMatch[1],
+        lng: lngMatch[1],
+        resolvedUrl: currentUrl,
+      });
+    }
 
-    for (const pattern of patterns) {
-      const match = currentUrl.match(pattern);
+    // Fallback patterns (less precise)
+    const fallbackPatterns = [
+      { re: /@(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false }, // viewport center
+      { re: /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
+      { re: /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
+      { re: /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, swap: false },
+    ];
+    for (const { re, swap } of fallbackPatterns) {
+      const match = currentUrl.match(re);
       if (match) {
-        // Special case for reverse order
-        if (pattern.source.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")) {
-          return NextResponse.json({
-            lat: match[2],
-            lng: match[1],
-            resolvedUrl: currentUrl,
-          });
-        }
         return NextResponse.json({
-          lat: match[1],
-          lng: match[2],
+          lat: swap ? match[2] : match[1],
+          lng: swap ? match[1] : match[2],
           resolvedUrl: currentUrl,
         });
       }
@@ -76,31 +78,30 @@ export async function POST(req: Request) {
       });
       const html = await pageRes.text();
 
-      // Look for [lat, lng] in the body - specifically for Google Maps initialization states
-      // Pattern: comma separated decimals inside brackets, often seen in window.APP_STATE
-      const bodyPatterns = [
-        /\[(-?\d+\.\d+),(-?\d+\.\d+)\]/, // [lat,lng]
-        /"lat":(-?\d+\.\d+),"lng":(-?\d+\.\d+)/, // JSON {lat:x, lng:y}
-        /center=(-?\d+\.\d+)%2C(-?\d+\.\d+)/, // query param in body
-      ];
+      // In page HTML, also try extracting !3d/!4d independently
+      const htmlLatMatch = html.match(/!3d(-?\d+\.\d+)/);
+      const htmlLngMatch = html.match(/!4d(-?\d+\.\d+)/);
+      if (htmlLatMatch && htmlLngMatch) {
+        return NextResponse.json({
+          lat: htmlLatMatch[1],
+          lng: htmlLngMatch[1],
+          resolvedUrl: currentUrl,
+          scraped: true,
+        });
+      }
 
-      for (const pattern of bodyPatterns) {
-        const match = html.match(pattern);
-        if (match) {
-          // Verify it's not a generic small number (like 0.1, 1.0 etc)
-          const lat = parseFloat(match[1]);
-          const lng = parseFloat(match[2]);
-
-          // Simple bounds check for Cambodia (roughly 9 N to 15 N, 102 E to 108 E)
-          // or more generally if it's a non-zero coordinate
-          if (Math.abs(lat) > 1 && Math.abs(lng) > 1) {
-            return NextResponse.json({
-              lat: match[1],
-              lng: match[2],
-              resolvedUrl: currentUrl,
-              scraped: true,
-            });
-          }
+      // Last resort: @lat,lng from HTML (viewport center)
+      const atMatch = html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (atMatch) {
+        const lat = parseFloat(atMatch[1]);
+        const lng = parseFloat(atMatch[2]);
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+          return NextResponse.json({
+            lat: atMatch[1],
+            lng: atMatch[2],
+            resolvedUrl: currentUrl,
+            scraped: true,
+          });
         }
       }
     } catch (e) {

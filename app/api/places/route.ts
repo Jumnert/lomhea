@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { pusherServer } from "@/lib/pusher";
 
 export const revalidate = 600; // Revalidate every 10 minutes
 
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       },
     });
 
+    await pusherServer.trigger("places", "places-updated", {});
     return NextResponse.json(place);
   } catch (error) {
     console.error("Create place error:", error);

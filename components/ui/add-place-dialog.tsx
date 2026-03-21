@@ -75,9 +75,9 @@ export function AddPlaceDialog({
       if (!formData.googleMapUrl) return;
 
       const patterns = [
-        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-        /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse
+        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // actual pin lat/lng ✓
+        /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse — actual pin ✓
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/, // viewport center (less accurate)
         /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
         /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
         /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
@@ -207,9 +207,9 @@ export function AddPlaceDialog({
     if (!finalLat || !finalLng) {
       if (formData.googleMapUrl) {
         const patterns = [
-          /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-          /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-          /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/,
+          /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // actual pin lat/lng ✓
+          /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse — actual pin ✓
+          /@(-?\d+\.\d+),(-?\d+\.\d+)/, // viewport center (less accurate)
           /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
           /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
           /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,

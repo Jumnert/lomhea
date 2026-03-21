@@ -10,7 +10,7 @@ import Map, {
 } from "react-map-gl/maplibre";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMapStore } from "@/stores/mapStore";
 import { useUIStore } from "@/stores/uiStore";
 import { Place } from "@/types/app";
@@ -18,6 +18,7 @@ import { CustomPin } from "./CustomPin";
 import { LomheaLoader } from "@/components/ui/LomheaLoader";
 import { useTheme } from "next-themes";
 import { useWebHaptics } from "web-haptics/react";
+import { pusherClient } from "@/lib/pusher-client";
 
 export function MapContainer() {
   const {
@@ -31,6 +32,18 @@ export function MapContainer() {
   const { setPanelOpen } = useUIStore();
   const { resolvedTheme } = useTheme();
   const { trigger } = useWebHaptics();
+  const queryClient = useQueryClient();
+
+  // Auto-refresh map when a place is approved or added (via Pusher)
+  React.useEffect(() => {
+    const channel = pusherClient.subscribe("places");
+    channel.bind("places-updated", () => {
+      queryClient.invalidateQueries({ queryKey: ["places"] });
+    });
+    return () => {
+      pusherClient.unsubscribe("places");
+    };
+  }, [queryClient]);
 
   // Switches between light/dark map style based on app theme
   const MAP_STYLE =
