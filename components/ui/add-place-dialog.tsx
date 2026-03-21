@@ -38,6 +38,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 const PROVINCES = [
   "Phnom Penh",
@@ -95,19 +97,39 @@ export function AddPlaceDialog() {
     images: [] as string[],
   });
 
+  const [isResolving, setIsResolving] = useState(false);
+
   // Extract lat/lng from Google Maps URL automatically
   useEffect(() => {
-    if (formData.googleMapUrl) {
-      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = formData.googleMapUrl.match(regex);
+    async function resolve() {
+      if (!formData.googleMapUrl) return;
+
+      const expandedRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = formData.googleMapUrl.match(expandedRegex);
       if (match) {
-        setFormData((prev) => ({
-          ...prev,
-          lat: match[1],
-          lng: match[2],
-        }));
+        setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+        return;
+      }
+
+      if (formData.googleMapUrl.includes("goo.gl")) {
+        setIsResolving(true);
+        try {
+          const res = await fetch("/api/utils/resolve-map-link", {
+            method: "POST",
+            body: JSON.stringify({ url: formData.googleMapUrl }),
+          });
+          const data = await res.json();
+          if (data.lat && data.lng) {
+            setFormData((p) => ({ ...p, lat: data.lat, lng: data.lng }));
+          }
+        } catch (e) {
+          console.error("Resolution failed:", e);
+        } finally {
+          setIsResolving(false);
+        }
       }
     }
+    resolve();
   }, [formData.googleMapUrl]);
 
   const createMutation = useMutation({
@@ -360,8 +382,30 @@ export function AddPlaceDialog() {
                   size={16}
                 />
               </div>
-              <p className="text-[10px] text-zinc-400 ml-1">
-                Paste a link to automatically verify the location.
+              <p
+                className={cn(
+                  "text-[10px] ml-1 transition-all duration-300",
+                  isResolving
+                    ? "text-amber-500 font-bold animate-pulse"
+                    : formData.lat && formData.googleMapUrl
+                      ? "text-emerald-600 font-bold"
+                      : "text-zinc-400",
+                )}
+              >
+                {isResolving ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 size={10} className="animate-spin" />
+                    Resolving remote coordinates...
+                  </span>
+                ) : formData.lat && formData.googleMapUrl ? (
+                  <span className="flex items-center gap-1.5">
+                    <Check size={10} strokeWidth={4} />
+                    Location Lock: {Number(formData.lat).toFixed(4)},{" "}
+                    {Number(formData.lng).toFixed(4)}
+                  </span>
+                ) : (
+                  "Paste a link to automatically verify the location."
+                )}
               </p>
             </div>
 

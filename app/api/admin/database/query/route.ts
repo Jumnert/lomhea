@@ -19,12 +19,17 @@ export async function POST(req: Request) {
 
     const startTime = Date.now();
 
+    const dbUrl = process.env.DATABASE_URL || "";
+    const dbHost = dbUrl.includes("@")
+      ? dbUrl.split("@")[1].split("/")[0]
+      : "localhost:5432";
+
     switch (cmd) {
       case "ping":
         await prisma.$queryRaw`SELECT 1`;
         const latency = Date.now() - startTime;
         return NextResponse.json({
-          output: `Pinging Database @ postgresql:5432... status: 200 OK. latency: ${latency}ms`,
+          output: `Pinging Database @ ${dbHost}... status: 200 OK. latency: ${latency}ms`,
         });
 
       case "stats":

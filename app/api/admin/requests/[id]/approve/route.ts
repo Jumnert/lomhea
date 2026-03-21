@@ -45,8 +45,34 @@ export async function POST(
       // Extract coordinates from googleMapUrl
       let lat = 0;
       let lng = 0;
-      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = request.googleMapUrl.match(regex);
+      let finalUrl = request.googleMapUrl;
+      const coordinateRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      let match = finalUrl.match(coordinateRegex);
+
+      if (
+        !match &&
+        (finalUrl.includes("goo.gl") || finalUrl.includes("t.ly"))
+      ) {
+        try {
+          let currentUrl = finalUrl;
+          for (let i = 0; i < 5; i++) {
+            const res = await fetch(currentUrl, {
+              method: "HEAD",
+              redirect: "manual",
+            });
+            const loc = res.headers.get("location");
+            if (!loc) break;
+            currentUrl = loc.startsWith("/")
+              ? new URL(loc, currentUrl).href
+              : loc;
+          }
+          finalUrl = currentUrl;
+          match = finalUrl.match(coordinateRegex);
+        } catch (e) {
+          console.error("Resolution failed during approval:", e);
+        }
+      }
+
       if (match) {
         lat = parseFloat(match[1]);
         lng = parseFloat(match[2]);
