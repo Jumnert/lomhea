@@ -41,7 +41,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, ClipboardPaste } from "lucide-react";
+import { useWebHaptics } from "web-haptics/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 
@@ -90,6 +91,7 @@ interface EditPlaceDialogProps {
 }
 
 export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
+  const { trigger } = useWebHaptics();
   const [open, setOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -377,12 +379,31 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       setFormData({ ...formData, googleMapUrl: e.target.value })
                     }
                     placeholder="Update coordinates from link..."
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    className="pl-10 pr-24 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
                   />
                   <LinkIcon
                     className="absolute left-3.5 top-4 text-zinc-400"
                     size={16}
                   />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                          trigger(20);
+                          setFormData({ ...formData, googleMapUrl: text });
+                          toast.success("Link pasted from clipboard!");
+                        }
+                      } catch (e) {
+                        toast.error("Clipboard permission denied");
+                      }
+                    }}
+                    className="absolute right-2 top-2 h-8 px-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all active:scale-95 shadow-sm"
+                  >
+                    <ClipboardPaste size={12} className="text-zinc-500" />
+                    Paste
+                  </button>
                 </div>
                 <p
                   className={cn(

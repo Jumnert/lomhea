@@ -17,6 +17,7 @@ import { Place } from "@/types/app";
 import { CustomPin } from "./CustomPin";
 import { LomheaLoader } from "@/components/ui/LomheaLoader";
 import { useTheme } from "next-themes";
+import { useWebHaptics } from "web-haptics/react";
 
 export function MapContainer() {
   const {
@@ -29,6 +30,7 @@ export function MapContainer() {
   } = useMapStore();
   const { setPanelOpen } = useUIStore();
   const { resolvedTheme } = useTheme();
+  const { trigger } = useWebHaptics();
 
   // Switches between light/dark map style based on app theme
   const MAP_STYLE =
@@ -42,21 +44,20 @@ export function MapContainer() {
   ];
 
   const { data: places, isLoading } = useQuery<Place[]>({
-    queryKey: ["places", category],
+    queryKey: ["places"],
     queryFn: async () => {
-      const res = await fetch(
-        `/api/places${category !== "All" ? `?category=${category}` : ""}`,
-      );
+      const res = await fetch("/api/places");
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    gcTime: 1000 * 60 * 60, // 1 hour
   });
 
   const mapRef = React.useRef<MapRef>(null);
 
   const onMarkerClick = (place: Place) => {
+    trigger(20);
     setSelectedPlaceId(place.id);
     setPanelOpen(true);
 
@@ -70,17 +71,28 @@ export function MapContainer() {
 
   const filteredPlaces = React.useMemo(() => {
     if (!places) return [];
-    if (!searchQuery) return places;
 
-    const query = searchQuery.toLowerCase();
-    return places.filter(
-      (place) =>
-        place.name.toLowerCase().includes(query) ||
-        place.nameKh?.toLowerCase().includes(query) ||
-        place.category.toLowerCase().includes(query) ||
-        place.province.toLowerCase().includes(query),
-    );
-  }, [places, searchQuery]);
+    let result = places;
+
+    // Filter by category locally
+    if (category !== "All") {
+      result = result.filter((p) => p.category === category);
+    }
+
+    // Filter by search query locally
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (place) =>
+          place.name.toLowerCase().includes(query) ||
+          place.nameKh?.toLowerCase().includes(query) ||
+          place.category.toLowerCase().includes(query) ||
+          place.province.toLowerCase().includes(query),
+      );
+    }
+
+    return result;
+  }, [places, category, searchQuery]);
 
   if (isLoading) {
     return (

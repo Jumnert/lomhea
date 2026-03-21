@@ -12,6 +12,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useWebHaptics } from "web-haptics/react";
 
 const categories = [
   { id: "All", name: "All", icon: LayoutGrid },
@@ -25,6 +26,7 @@ const categories = [
 
 export function FilterBar() {
   const { category: activeCategory, setCategory } = useMapStore();
+  const { trigger } = useWebHaptics();
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-4">
@@ -42,7 +44,10 @@ export function FilterBar() {
                 ? "bg-primary text-primary-foreground shadow-md"
                 : "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-white/20 text-zinc-600 dark:text-zinc-400 hover:bg-white dark:hover:bg-zinc-800",
             )}
-            onClick={() => setCategory(cat.id)}
+            onClick={() => {
+              trigger(35);
+              setCategory(cat.id);
+            }}
           >
             <Icon size={14} />
             <span className="text-xs font-medium">{cat.name}</span>

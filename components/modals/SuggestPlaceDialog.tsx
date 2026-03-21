@@ -31,6 +31,7 @@ import {
   Send,
   Loader2,
   X,
+  ClipboardPaste,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -315,13 +316,32 @@ export function SuggestPlaceDialog() {
                     setFormData({ ...formData, googleMapUrl: e.target.value })
                   }
                   placeholder="https://google.com/maps/..."
-                  className="pl-9 h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-none focus-visible:ring-1 ring-primary/50"
+                  className="pl-9 pr-20 h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-none focus-visible:ring-1 ring-primary/50"
                   required
                 />
                 <LinkIcon
                   className="absolute left-3 top-3.5 text-zinc-400"
                   size={16}
                 />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) {
+                        trigger(20);
+                        setFormData({ ...formData, googleMapUrl: text });
+                        toast.success("Link pasted from clipboard!");
+                      }
+                    } catch (e) {
+                      toast.error("Clipboard permission denied");
+                    }
+                  }}
+                  className="absolute right-2 top-1.5 h-8 px-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold text-primary flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all active:scale-95"
+                >
+                  <ClipboardPaste size={12} />
+                  Paste
+                </button>
               </div>
             </div>
 
