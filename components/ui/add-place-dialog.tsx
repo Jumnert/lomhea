@@ -86,12 +86,24 @@ export function AddPlaceDialog({
       for (const pattern of patterns) {
         const match = formData.googleMapUrl.match(pattern);
         if (match) {
+          let latStr = match[1];
+          let lngStr = match[2];
           if (pattern.source.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")) {
-            setFormData((p) => ({ ...p, lat: match[2], lng: match[1] }));
-          } else {
-            setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+            [latStr, lngStr] = [match[2], match[1]];
           }
-          return;
+
+          const lat = parseFloat(latStr);
+          const lng = parseFloat(lngStr);
+
+          // Only accept if it's within Cambodia-esque bounds
+          if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
+            setFormData((p) => ({
+              ...p,
+              lat: lat.toString(),
+              lng: lng.toString(),
+            }));
+            return;
+          }
         }
       }
 

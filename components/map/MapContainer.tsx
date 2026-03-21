@@ -104,6 +104,17 @@ export function MapContainer() {
       );
     }
 
+    // Final safety check: Filter out markers with invalid coordinates to prevent MapLibre crash
+    result = result.filter((p) => {
+      const isLatValid = p.lat >= -90 && p.lat <= 90;
+      const isLngValid = p.lng >= -180 && p.lng <= 180;
+      if (!isLatValid || !isLngValid) {
+        console.error(`Invalid coordinates for place: ${p.name}`, p.lat, p.lng);
+        return false;
+      }
+      return true;
+    });
+
     return result;
   }, [places, category, searchQuery]);
 
