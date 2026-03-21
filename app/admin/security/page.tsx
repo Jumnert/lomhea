@@ -342,7 +342,7 @@ export default function SecurityPage() {
                   <Label className="font-bold tracking-tight italic">
                     Brute Force Quarantine
                   </Label>
-                  <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-tighter font-black">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-black">
                     Feature locked to PRO-License.
                   </p>
                 </div>
