@@ -57,6 +57,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "@/components/ui/sonner";
+import { NotificationProvider } from "@/providers/NotificationProvider";
 
 export default function RootLayout({
   children,
@@ -69,7 +70,7 @@ export default function RootLayout({
         className={`${inter.variable} ${kantumruy.variable} font-sans antialiased`}
       >
         <QueryProvider>
-          {children}
+          <NotificationProvider>{children}</NotificationProvider>
           <Toaster position="top-center" richColors />
         </QueryProvider>
       </body>

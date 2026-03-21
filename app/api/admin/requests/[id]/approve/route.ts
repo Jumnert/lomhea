@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/lib/pusher";
+import { sendPushNotification } from "@/lib/push-notification";
 
 export async function POST(
   req: Request,
@@ -114,6 +115,13 @@ export async function POST(
         message: `Your suggestion for "${request.nameEn}" has been approved and added to the map.`,
       },
     );
+
+    // 5. Trigger Web Push (Mobile/Desktop background)
+    await sendPushNotification(request.userId, {
+      title: "Lomhea: Suggestion Approved!",
+      body: `Excellent! Your place "${request.nameEn}" is now live on the map.`,
+      url: "/",
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

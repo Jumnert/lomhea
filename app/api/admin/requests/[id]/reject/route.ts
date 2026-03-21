@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/lib/pusher";
+import { sendPushNotification } from "@/lib/push-notification";
 
 export async function POST(
   req: Request,
@@ -62,6 +63,13 @@ export async function POST(
         message: `Your request for "${request.nameEn}" was not approved.`,
       },
     );
+
+    // Trigger Web Push (Mobile/Desktop background)
+    await sendPushNotification(request.userId, {
+      title: "Lomhea: Suggestion Update",
+      body: `Your request for "${request.nameEn}" was not approved. Note: ${reason || "No reason provided"}`,
+      url: "/profile",
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
