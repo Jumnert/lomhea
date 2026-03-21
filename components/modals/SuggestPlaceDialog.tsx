@@ -187,19 +187,22 @@ export function SuggestPlaceDialog() {
           <Plus size={18} />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl">
-        <div className="bg-primary p-6 text-white text-left">
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Plus className="bg-white/20 p-1 rounded-lg" size={28} />
+      <DialogContent className="w-[95vw] sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl [&_button[data-slot=dialog-close]]:text-white">
+        <div className="bg-primary p-4 sm:p-6 text-white text-left">
+          <DialogTitle className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Plus className="bg-white/20 p-1 rounded-lg" size={24} />
             Suggest a Place
           </DialogTitle>
-          <DialogDescription className="text-primary-foreground/80 mt-1">
+          <DialogDescription className="text-primary-foreground/80 mt-1 text-[11px] sm:text-sm">
             Help us expand the map by sharing a hidden gem in Cambodia.
           </DialogDescription>
         </div>
 
         <ScrollArea className="max-h-[80vh]">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6 text-left">
+          <form
+            onSubmit={handleSubmit}
+            className="p-4 sm:p-6 space-y-4 sm:space-y-6 text-left"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="nameEn">Place Name (EN)</Label>
@@ -334,7 +337,7 @@ export function SuggestPlaceDialog() {
 
             <div className="space-y-2">
               <Label>Photos ({formData.images.length}/3)</Label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
                 {formData.images.map((img, i) => (
                   <div
                     key={i}

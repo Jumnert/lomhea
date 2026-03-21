@@ -92,6 +92,19 @@ function CardInner({
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== "undefined" ? window.innerWidth : 1200,
+    height: typeof window !== "undefined" ? window.innerHeight : 800,
+  });
+
+  useEffect(() => {
+    const handleResize = () =>
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowSize.width < 640;
 
   const [reportData, setReportData] = useState({
     reason: "Incorrect Info",
@@ -220,13 +233,88 @@ function CardInner({
       if (!res.ok) throw new Error("Failed to submit");
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newReview) => {
+      await queryClient.cancelQueries({ queryKey: ["place", selectedPlaceId] });
+      const previousPlace = queryClient.getQueryData<any>([
+        "place",
+        selectedPlaceId,
+      ]);
+
+      if (previousPlace) {
+        const oldReviews = previousPlace.reviews || [];
+        const isUpsert = oldReviews.some(
+          (r: any) => r.userId === session?.user.id,
+        );
+
+        const optimisticReview = {
+          id: "temp-review-id",
+          createdAt: new Date().toISOString(),
+          rating: newReview.rating,
+          comment: newReview.comment,
+          user: session?.user,
+        };
+
+        const nextReviews = isUpsert
+          ? oldReviews.map((r: any) =>
+              r.userId === session?.user.id ? optimisticReview : r,
+            )
+          : [optimisticReview, ...oldReviews];
+
+        const nextRating =
+          nextReviews.reduce((acc: number, curr: any) => acc + curr.rating, 0) /
+          nextReviews.length;
+
+        queryClient.setQueryData(["place", selectedPlaceId], {
+          ...previousPlace,
+          reviews: nextReviews,
+          rating: nextRating,
+          reviewCount: nextReviews.length,
+        });
+      }
+      return { previousPlace };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousPlace) {
+        queryClient.setQueryData(
+          ["place", selectedPlaceId],
+          context.previousPlace,
+        );
+      }
+      toast.error("Failed to publish review");
+    },
+    onSuccess: (realReview) => {
       toast.success("Review published! Thank you.");
-      queryClient.invalidateQueries({ queryKey: ["place", selectedPlaceId] });
       setIsReviewOpen(false);
       setReviewData({ rating: 5, comment: "" });
+
+      // Immediately replace the optimistic review with the real one to prevent flicker
+      queryClient.setQueryData(["place", selectedPlaceId], (old: any) => {
+        if (!old) return old;
+        const oldReviews = old.reviews || [];
+        const updatedReviews = oldReviews.map((r: any) =>
+          r.id === "temp-review-id"
+            ? { ...realReview, user: session?.user }
+            : r,
+        );
+
+        // If for some reason it wasn't found (e.g. race condition), just prepend it
+        if (!updatedReviews.find((r: any) => r.id === realReview.id)) {
+          return {
+            ...old,
+            reviews: [
+              { ...realReview, user: session?.user },
+              ...oldReviews.filter((r: any) => r.id !== "temp-review-id"),
+            ],
+          };
+        }
+
+        return { ...old, reviews: updatedReviews };
+      });
     },
-    onError: () => toast.error("Failed to submit review"),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["place", selectedPlaceId] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
+    },
   });
 
   const isFavorited = selectedPlaceId
@@ -247,11 +335,47 @@ function CardInner({
       });
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["favorites"] });
+      const previousFavorites = queryClient.getQueryData<string[]>([
+        "favorites",
+      ]);
+
+      if (previousFavorites && selectedPlaceId) {
+        const isAdding = !previousFavorites.includes(selectedPlaceId);
+        const nextFavorites = isAdding
+          ? [...previousFavorites, selectedPlaceId]
+          : previousFavorites.filter((id) => id !== selectedPlaceId);
+
+        queryClient.setQueryData(["favorites"], nextFavorites);
+      }
+      return { previousFavorites };
+    },
+    onError: (err, _, context) => {
+      if (context?.previousFavorites) {
+        queryClient.setQueryData(["favorites"], context.previousFavorites);
+      }
+      toast.error("Network error. Try again.");
+    },
+    onSuccess: (data: { favorited: boolean }) => {
+      if (selectedPlaceId) {
+        queryClient.setQueryData(["favorites"], (old: string[] | undefined) => {
+          const base = old || [];
+          const exists = base.includes(selectedPlaceId);
+          if (data.favorited && !exists) return [...base, selectedPlaceId];
+          if (!data.favorited && exists)
+            return base.filter((id) => id !== selectedPlaceId);
+          return base;
+        });
+      }
+
       toast.success(
-        isFavorited ? "Removed from favorites" : "Added to favorites! ❤️",
+        data.favorited ? "Added to favorites! ❤️" : "Removed from favorites",
       );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
     },
   });
 
@@ -266,9 +390,16 @@ function CardInner({
         className={cn(
           "overflow-hidden transition-shadow duration-500",
           "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-2xl",
+          isMobile ? "bottom-6 left-1/2 -translate-x-1/2" : "",
         )}
-        collapsedSize={{ width: 340, height: 110 }}
-        expandedSize={{ width: 520, height: 560 }}
+        collapsedSize={{
+          width: isMobile ? windowSize.width - 48 : 340,
+          height: 110,
+        }}
+        expandedSize={{
+          width: isMobile ? windowSize.width - 32 : 520,
+          height: isMobile ? Math.min(480, windowSize.height * 0.65) : 560,
+        }}
       >
         <div className="relative h-full w-full flex flex-col">
           {/* ── COLLAPSED VIEW ── */}
