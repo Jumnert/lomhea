@@ -124,6 +124,16 @@ export function MapContainer() {
         maxZoom={18}
         reuseMaps
         boxZoom={false}
+        antialias={true}
+        {...({
+          dragPan: {
+            inertia: 300,
+            easing: (t: number) => t * (2 - t),
+          },
+          scrollZoom: {
+            smoothness: 0.15,
+          },
+        } as any)}
         onLoad={(e) => {
           const map = e.target;
           map.on("styleimagemissing", (e) => {
