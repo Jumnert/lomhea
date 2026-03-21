@@ -31,12 +31,14 @@ import { SuggestPlaceDialog } from "@/components/modals/SuggestPlaceDialog";
 import { ProfileDialog } from "@/components/modals/ProfileDialog";
 
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useWebHaptics } from "web-haptics/react";
 
 export function Navbar() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const { searchQuery, setSearchQuery } = useMapStore();
   const { resolvedTheme, setTheme } = useTheme();
+  const { trigger } = useWebHaptics();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -79,9 +81,10 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             className="hidden md:flex rounded-2xl w-10 h-10 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md shadow-md border border-white/20 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-900 transition-all"
-            onClick={() =>
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
+            onClick={() => {
+              trigger(30);
+              setTheme(resolvedTheme === "dark" ? "light" : "dark");
+            }}
             aria-label="Toggle theme"
           >
             {resolvedTheme === "dark" ? (
@@ -172,9 +175,10 @@ export function Navbar() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="rounded-xl py-2.5 cursor-pointer"
-                      onClick={() =>
-                        setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                      }
+                      onClick={() => {
+                        trigger(30);
+                        setTheme(resolvedTheme === "dark" ? "light" : "dark");
+                      }}
                     >
                       {resolvedTheme === "dark" ? (
                         <>

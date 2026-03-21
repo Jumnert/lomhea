@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
+import { useWebHaptics } from "web-haptics/react";
 
 const provinces = [
   "Phnom Penh",
@@ -77,6 +78,7 @@ const categories = [
 ];
 
 export function SuggestPlaceDialog() {
+  const { trigger } = useWebHaptics();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -122,6 +124,7 @@ export function SuggestPlaceDialog() {
         images: [...prev.images, result.url],
       }));
       toast.success("Photo uploaded successfully");
+      trigger(20);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -156,6 +159,7 @@ export function SuggestPlaceDialog() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to submit");
 
+      trigger([{ duration: 30 }, { delay: 60, duration: 40, intensity: 1 }]);
       toast.success("Suggestion submitted! We'll review it soon.");
       setIsOpen(false);
       setFormData({

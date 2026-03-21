@@ -73,6 +73,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShareDialog } from "@/components/modals/ShareDialog";
+import { useWebHaptics } from "web-haptics/react";
 
 // Inner component that safely uses hooks and receives expanded state
 function CardInner({
@@ -87,6 +88,7 @@ function CardInner({
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { trigger } = useWebHaptics();
   const [isContentReady, setIsContentReady] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -234,6 +236,7 @@ function CardInner({
       return res.json();
     },
     onMutate: async (newReview) => {
+      trigger([{ duration: 30 }, { delay: 60, duration: 40, intensity: 1 }]);
       await queryClient.cancelQueries({ queryKey: ["place", selectedPlaceId] });
       const previousPlace = queryClient.getQueryData<any>([
         "place",
@@ -336,6 +339,7 @@ function CardInner({
       return res.json();
     },
     onMutate: async () => {
+      trigger(35);
       await queryClient.cancelQueries({ queryKey: ["favorites"] });
       const previousFavorites = queryClient.getQueryData<string[]>([
         "favorites",
@@ -488,14 +492,10 @@ function CardInner({
                         : "bg-black/60 backdrop-blur-sm border-white/20 text-white hover:bg-black/80",
                     )}
                   >
-                    {toggleFavorite.isPending ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <Heart
-                        size={15}
-                        className={cn(isFavorited && "fill-current")}
-                      />
-                    )}
+                    <Heart
+                      size={15}
+                      className={cn(isFavorited && "fill-current")}
+                    />
                   </button>
 
                   <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
@@ -672,7 +672,10 @@ function CardInner({
                     <ExpandableCardContent className="p-0 flex-1 min-h-0 flex flex-col">
                       <Tabs
                         value={activeTab}
-                        onValueChange={(v) => setActiveTab(v as any)}
+                        onValueChange={(v) => {
+                          trigger(10);
+                          setActiveTab(v as any);
+                        }}
                         className="flex flex-col flex-1 min-h-0"
                       >
                         {/* Tab bar */}
