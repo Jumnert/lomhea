@@ -69,6 +69,7 @@ export default function AdminRequestsPage() {
     onSuccess: () => {
       toast.success("Request approved and place created!");
       queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
       setSelectedRequest(null);
     },
   });
@@ -85,6 +86,7 @@ export default function AdminRequestsPage() {
     onSuccess: () => {
       toast.success("Request rejected");
       queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
       setRejectReason("");
       setIsRejectDialogOpen(false);
       setSelectedRequest(null);

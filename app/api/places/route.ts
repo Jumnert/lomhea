@@ -4,35 +4,34 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/lib/pusher";
 
-export const revalidate = 600; // Revalidate every 10 minutes
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
 
   try {
+    // Optimization: Only select what's needed for the map pins/cards
+    // This reduces the payload and database stress massively compared to fetching everything
     const places = await prisma.place.findMany({
       where: category && category !== "All" ? { category } : {},
-      include: {
-        accommodations: true,
-        foods: true,
-        reviews: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                image: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        nameKh: true,
+        lat: true,
+        lng: true,
+        category: true,
+        province: true,
+        images: true, // Needed for simple thumbnails
+        rating: true,
+        reviewCount: true,
+        isVerified: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(places, {
       headers: {
-        "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=50",
       },
     });
   } catch (error) {

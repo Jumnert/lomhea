@@ -69,25 +69,21 @@ export function SuggestPlaceDialog() {
     async function resolve() {
       if (!formData.googleMapUrl) return;
 
-      const patterns = [
-        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-        /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse
-        /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
-        /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-      ];
+      const extractCoords = (url: string) => {
+        const latM = url.match(/!3d(-?\d+\.\d+)/);
+        const lngM = url.match(/!4d(-?\d+\.\d+)/);
+        if (latM && lngM) return { lat: latM[1], lng: lngM[1] };
+        const atM = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atM) return { lat: atM[1], lng: atM[2] };
+        const qM = url.match(/[?&](?:query|q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (qM) return { lat: qM[1], lng: qM[2] };
+        return null;
+      };
 
-      for (const pattern of patterns) {
-        const match = formData.googleMapUrl.match(pattern);
-        if (match) {
-          if (pattern.source.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")) {
-            setFormData((p) => ({ ...p, lat: match[2], lng: match[1] }));
-          } else {
-            setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
-          }
-          return;
-        }
+      const coords = extractCoords(formData.googleMapUrl);
+      if (coords) {
+        setFormData((p) => ({ ...p, lat: coords.lat, lng: coords.lng }));
+        return;
       }
 
       const isShortLink =

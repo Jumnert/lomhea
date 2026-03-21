@@ -2,8 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-
-export const revalidate = 600; // Cache for 10 minutes
+import { pusherServer } from "@/lib/pusher";
 
 export async function GET(
   request: Request,
@@ -72,6 +71,7 @@ export async function PATCH(
       data: body,
     });
 
+    await pusherServer.trigger("places", "places-updated", {});
     return NextResponse.json(updatedPlace);
   } catch (error) {
     console.error("Update place error:", error);
@@ -102,6 +102,7 @@ export async function DELETE(
       where: { id },
     });
 
+    await pusherServer.trigger("places", "places-updated", {});
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete place error:", error);

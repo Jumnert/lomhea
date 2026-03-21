@@ -55,37 +55,38 @@ export async function POST(req: Request) {
         let lng = bodyLng ? parseFloat(bodyLng) : 0;
 
         if (lat === 0 && lng === 0) {
-          let finalUrl = googleMapUrl;
-          const patterns = [
-            /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-            /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-            /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/,
-            /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
-            /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-            /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-          ];
+          let currentUrl = googleMapUrl;
+          const userAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
-          let match = null;
-          let matchedPattern = "";
-          for (const pattern of patterns) {
-            match = finalUrl.match(pattern);
-            if (match) {
-              matchedPattern = pattern.source;
-              break;
-            }
+          const extractCoords = (url: string) => {
+            const latM = url.match(/!3d(-?\d+\.\d+)/);
+            const lngM = url.match(/!4d(-?\d+\.\d+)/);
+            if (latM && lngM)
+              return { lat: parseFloat(latM[1]), lng: parseFloat(lngM[1]) };
+            const atM = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+            if (atM)
+              return { lat: parseFloat(atM[1]), lng: parseFloat(atM[2]) };
+            const qM = url.match(
+              /[?&](?:query|q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/,
+            );
+            if (qM) return { lat: parseFloat(qM[1]), lng: parseFloat(qM[2]) };
+            return null;
+          };
+
+          const direct = extractCoords(currentUrl);
+          if (direct) {
+            lat = direct.lat;
+            lng = direct.lng;
           }
 
           if (
-            !match &&
-            (finalUrl.includes("goo.gl") ||
-              finalUrl.includes("t.ly") ||
-              finalUrl.includes("maps.app.goo.gl"))
+            !lat &&
+            !lng &&
+            (currentUrl.includes("goo.gl") ||
+              currentUrl.includes("maps.app.goo.gl"))
           ) {
             try {
-              let currentUrl = finalUrl;
-              const userAgent =
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
               for (let i = 0; i < 5; i++) {
                 const res = await fetch(currentUrl, {
                   method: "HEAD",
@@ -94,7 +95,6 @@ export async function POST(req: Request) {
                 });
                 const loc = res.headers.get("location");
                 if (!loc) {
-                  // Try GET if HEAD fails
                   const getRes = await fetch(currentUrl, {
                     method: "GET",
                     redirect: "manual",
@@ -111,53 +111,13 @@ export async function POST(req: Request) {
                     : loc;
                 }
               }
-
-              finalUrl = currentUrl;
-              for (const pattern of patterns) {
-                match = finalUrl.match(pattern);
-                if (match) {
-                  matchedPattern = pattern.source;
-                  break;
-                }
-              }
-
-              // Scraping fallback if still no match in URL
-              if (!match) {
-                const pageRes = await fetch(finalUrl, {
-                  headers: { "User-Agent": userAgent },
-                });
-                const html = await pageRes.text();
-                const bodyPatterns = [
-                  /\[(-?\d+\.\d+),(-?\d+\.\d+)\]/,
-                  /"lat":(-?\d+\.\d+),"lng":(-?\d+\.\d+)/,
-                ];
-                for (const p of bodyPatterns) {
-                  const m = html.match(p);
-                  if (m) {
-                    const scrapLat = parseFloat(m[1]);
-                    const scrapLng = parseFloat(m[2]);
-                    if (Math.abs(scrapLat) > 1 && Math.abs(scrapLng) > 1) {
-                      lat = scrapLat;
-                      lng = scrapLng;
-                      break;
-                    }
-                  }
-                }
+              const resolved = extractCoords(currentUrl);
+              if (resolved) {
+                lat = resolved.lat;
+                lng = resolved.lng;
               }
             } catch (e) {
               console.error("Auto-approval resolution failed:", e);
-            }
-          }
-
-          if (match) {
-            if (
-              matchedPattern.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")
-            ) {
-              lat = parseFloat(match[2]);
-              lng = parseFloat(match[1]);
-            } else {
-              lat = parseFloat(match[1]);
-              lng = parseFloat(match[2]);
             }
           }
         }
@@ -198,6 +158,9 @@ export async function POST(req: Request) {
           message: `Your suggestion for "${nameEn}" has been auto-approved.`,
         },
       );
+
+      // Broadcast map update
+      await pusherServer.trigger("places", "places-updated", {});
 
       return NextResponse.json(request);
     }

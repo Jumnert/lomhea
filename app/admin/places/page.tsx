@@ -68,6 +68,7 @@ export default function AdminPlacesPage() {
     onSuccess: () => {
       toast.success("Place status updated");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
     },
   });
 
@@ -92,6 +93,7 @@ export default function AdminPlacesPage() {
     onSuccess: () => {
       toast.success("Place deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
     },
     onError: (error: any) => {
       toast.error(error.message);

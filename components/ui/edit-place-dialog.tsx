@@ -132,10 +132,20 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
     async function resolve() {
       if (!formData.googleMapUrl) return;
 
-      const expandedRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = formData.googleMapUrl.match(expandedRegex);
-      if (match) {
-        setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+      const extractCoords = (url: string) => {
+        const latM = url.match(/!3d(-?\d+\.\d+)/);
+        const lngM = url.match(/!4d(-?\d+\.\d+)/);
+        if (latM && lngM) return { lat: latM[1], lng: lngM[1] };
+        const atM = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atM) return { lat: atM[1], lng: atM[2] };
+        const qM = url.match(/[?&](?:query|q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (qM) return { lat: qM[1], lng: qM[2] };
+        return null;
+      };
+
+      const coords = extractCoords(formData.googleMapUrl);
+      if (coords) {
+        setFormData((p) => ({ ...p, lat: coords.lat, lng: coords.lng }));
         return;
       }
 
@@ -177,6 +187,7 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
     onSuccess: () => {
       toast.success("Place updated successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
       setOpen(false);
     },
     onError: () => {
@@ -194,6 +205,7 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
     onSuccess: () => {
       toast.success("Review removed");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
     },
     onError: () => toast.error("Failed to delete review"),
   });

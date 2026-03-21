@@ -139,6 +139,7 @@ export function AddPlaceDialog({
     onSuccess: () => {
       toast.success("Location published successfully");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
       setOpen(false);
       setFormData({
         name: "",

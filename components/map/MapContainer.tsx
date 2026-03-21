@@ -63,7 +63,7 @@ export function MapContainer() {
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 30, // 30 seconds
     gcTime: 1000 * 60 * 60, // 1 hour
   });
 
