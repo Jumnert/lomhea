@@ -143,7 +143,7 @@ export default function LoginPage() {
                     className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-sm font-bold text-zinc-700 dark:text-zinc-300 shadow-sm transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:scale-[1.01] active:scale-[0.99]"
                   >
                     <img
-                      src="https://www.svgrepo.com/show/475564/google-color.svg"
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       className="h-5 w-5"
                       alt="Google"
                     />
