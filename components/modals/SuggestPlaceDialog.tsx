@@ -70,6 +70,10 @@ const categories = [
   "Waterfall",
   "Market",
   "Museum",
+  "Adventure",
+  "Cultural",
+  "City",
+  "Religious",
 ];
 
 export function SuggestPlaceDialog() {

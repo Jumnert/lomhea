@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -12,6 +12,8 @@ import {
   ImagePlus,
   X,
   Globe,
+  Send,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,10 +88,27 @@ export function AddPlaceDialog() {
     description: "",
     lat: "",
     lng: "",
-    category: "Nature",
-    province: "Siem Reap",
+    category: "",
+    province: "",
+    googleMapUrl: "",
+    reason: "",
     images: [] as string[],
   });
+
+  // Extract lat/lng from Google Maps URL automatically
+  useEffect(() => {
+    if (formData.googleMapUrl) {
+      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = formData.googleMapUrl.match(regex);
+      if (match) {
+        setFormData((prev) => ({
+          ...prev,
+          lat: match[1],
+          lng: match[2],
+        }));
+      }
+    }
+  }, [formData.googleMapUrl]);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -115,8 +134,10 @@ export function AddPlaceDialog() {
         description: "",
         lat: "",
         lng: "",
-        category: "Nature",
-        province: "Siem Reap",
+        category: "",
+        province: "",
+        googleMapUrl: "",
+        reason: "",
         images: [],
       });
     },
@@ -128,6 +149,11 @@ export function AddPlaceDialog() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    if (formData.images.length >= 5) {
+      toast.error("Maximum 5 photos allowed");
+      return;
+    }
 
     setIsUploading(true);
     const file = files[0];
@@ -162,7 +188,13 @@ export function AddPlaceDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.lat || !formData.lng) {
-      toast.error("Coordinates are required for admin entry");
+      toast.error(
+        "Coordinates are required (paste a Google Maps link or enter manually)",
+      );
+      return;
+    }
+    if (!formData.province || !formData.category) {
+      toast.error("Please fill in all required fields");
       return;
     }
     createMutation.mutate(formData);
@@ -176,7 +208,7 @@ export function AddPlaceDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl shadow-3xl">
-        <div className="bg-zinc-900 p-8 text-white relative overflow-hidden">
+        <div className="bg-zinc-900 p-8 text-white relative overflow-hidden text-left">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
           <DialogTitle className="text-3xl font-black tracking-tighter flex items-center gap-3">
             <Plus className="bg-white/10 p-1.5 rounded-xl" size={32} />
@@ -187,12 +219,12 @@ export function AddPlaceDialog() {
           </DialogDescription>
         </div>
 
-        <ScrollArea className="max-h-[75vh]">
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="max-h-[80vh]">
+          <form onSubmit={handleSubmit} className="p-8 space-y-6 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  EN Name
+                <Label className="text-xs font-bold text-zinc-500">
+                  Place Name (EN)
                 </Label>
                 <div className="relative">
                   <Input
@@ -200,19 +232,19 @@ export function AddPlaceDialog() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100"
-                    placeholder="Angkor Wat"
+                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    placeholder="e.g. Angkor Wat"
                     required
                   />
                   <AlignLeft
-                    className="absolute left-3.5 top-4 text-zinc-300"
+                    className="absolute left-3.5 top-4 text-zinc-400"
                     size={16}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  KH Name
+                <Label className="text-xs font-bold text-zinc-500">
+                  Place Name (KH)
                 </Label>
                 <div className="relative">
                   <Input
@@ -220,74 +252,36 @@ export function AddPlaceDialog() {
                     onChange={(e) =>
                       setFormData({ ...formData, nameKh: e.target.value })
                     }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100"
+                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
                     placeholder="អង្គរវត្ត"
                   />
                   <AlignLeft
-                    className="absolute left-3.5 top-4 text-zinc-300"
+                    className="absolute left-3.5 top-4 text-zinc-400"
                     size={16}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                Description
-              </Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="rounded-2xl bg-zinc-50 border-zinc-100 resize-none h-28"
-                placeholder="Describe the historical or natural significance..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  Category
-                </Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(v) =>
-                    setFormData({ ...formData, category: v })
-                  }
-                >
-                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100">
-                    <div className="flex items-center gap-2 px-1 text-zinc-400">
-                      <Tag size={16} />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl shadow-2xl">
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                <Label className="text-xs font-bold text-zinc-500">
                   Province
                 </Label>
                 <Select
+                  required
                   value={formData.province}
                   onValueChange={(v) =>
                     setFormData({ ...formData, province: v })
                   }
                 >
-                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100">
-                    <div className="flex items-center gap-2 px-1 text-zinc-400">
-                      <MapPin size={16} />
-                      <SelectValue />
+                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-zinc-400" />
+                      <SelectValue placeholder="Select province" />
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="rounded-2xl shadow-2xl">
+                  <SelectContent className="rounded-2xl">
                     {PROVINCES.map((p) => (
                       <SelectItem key={p} value={p}>
                         {p}
@@ -296,53 +290,96 @@ export function AddPlaceDialog() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-zinc-500">
+                  Category
+                </Label>
+                <Select
+                  required
+                  value={formData.category}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, category: v })
+                  }
+                >
+                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                    <div className="flex items-center gap-2">
+                      <Tag size={16} className="text-zinc-400" />
+                      <SelectValue placeholder="Select category" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  Latitude
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={formData.lat}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lat: e.target.value })
-                    }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100"
-                    placeholder="13.4125"
-                    required
-                  />
-                  <Globe
-                    className="absolute left-3.5 top-4 text-zinc-300"
-                    size={16}
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500">
+                Google Maps Link
+              </Label>
+              <div className="relative">
+                <Input
+                  type="url"
+                  value={formData.googleMapUrl}
+                  onChange={(e) =>
+                    setFormData({ ...formData, googleMapUrl: e.target.value })
+                  }
+                  placeholder="https://google.com/maps/..."
+                  className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                  required
+                />
+                <LinkIcon
+                  className="absolute left-3.5 top-4 text-zinc-400"
+                  size={16}
+                />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  Longitude
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={formData.lng}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lng: e.target.value })
-                    }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100"
-                    placeholder="103.8667"
-                    required
-                  />
-                  <Globe
-                    className="absolute left-3.5 top-4 text-zinc-300"
-                    size={16}
-                  />
-                </div>
+              <p className="text-[10px] text-zinc-400 ml-1">
+                Paste a link to automatically verify the location.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500">
+                Description
+              </Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none h-28"
+                placeholder="Tell us what makes this place special..."
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500">
+                Admin Note / Reason
+              </Label>
+              <div className="relative">
+                <Textarea
+                  value={formData.reason}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reason: e.target.value })
+                  }
+                  placeholder="Internal notes about this location..."
+                  className="pl-10 min-h-[80px] rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none"
+                />
+                <MessageSquare
+                  className="absolute left-3.5 top-4 text-zinc-400"
+                  size={16}
+                />
               </div>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              <Label className="text-xs font-bold text-zinc-500">
                 Gallery ({formData.images.length}/5)
               </Label>
               <div className="grid grid-cols-5 gap-3">
@@ -371,7 +408,7 @@ export function AddPlaceDialog() {
                     type="button"
                     disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square border-2 border-dashed rounded-xl flex items-center justify-center text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-all group"
+                    className="aspect-square border-2 border-dashed rounded-xl flex items-center justify-center text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all group"
                   >
                     {isUploading ? (
                       <Loader2 className="animate-spin" size={20} />
@@ -400,9 +437,15 @@ export function AddPlaceDialog() {
                 disabled={createMutation.isPending || isUploading}
               >
                 {createMutation.isPending ? (
-                  <Loader2 className="animate-spin h-5 w-5" />
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-5 w-5" />
+                    Publishing...
+                  </>
                 ) : (
-                  "Publish to Directory"
+                  <>
+                    <Send className="mr-2 h-5 w-5" />
+                    Publish to Directory
+                  </>
                 )}
               </Button>
             </DialogFooter>

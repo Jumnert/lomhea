@@ -5,13 +5,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Pencil,
   Loader2,
-  Image as ImageIcon,
   MapPin,
-  X,
+  Tag,
+  AlignLeft,
+  Link as LinkIcon,
   ImagePlus,
-  Trash2,
+  X,
+  Globe,
   Star,
+  Trash2,
   MessageSquare,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,22 +46,40 @@ import { Separator } from "@/components/ui/separator";
 const PROVINCES = [
   "Phnom Penh",
   "Siem Reap",
-  "Preah Sihanouk",
-  "Kampot",
-  "Kep",
+  "Sihanoukville",
   "Battambang",
+  "Kampot",
   "Koh Kong",
+  "Kep",
   "Mondulkiri",
   "Ratanakiri",
+  "Preah Vihear",
+  "Kandal",
   "Kampong Cham",
+  "Kampong Chhnang",
+  "Kampong Speu",
+  "Kampong Thom",
+  "Kratie",
+  "Odar Meanchey",
+  "Pailin",
+  "Pursat",
+  "Prey Veng",
+  "Stung Treng",
+  "Svay Rieng",
+  "Takeo",
+  "Tboung Khmum",
 ];
 
 const CATEGORIES = [
-  "Nature",
-  "Cultural",
+  "Temple",
   "Beach",
-  "City",
+  "Nature",
+  "Waterfall",
+  "Market",
+  "Museum",
   "Adventure",
+  "Cultural",
+  "City",
   "Religious",
 ];
 
@@ -76,8 +99,9 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
     description: place.description || "",
     lat: place.lat?.toString() || "",
     lng: place.lng?.toString() || "",
-    category: place.category || "Nature",
-    province: place.province || "Siem Reap",
+    category: place.category || "",
+    province: place.province || "",
+    googleMapUrl: "",
     images: place.images || ([] as string[]),
   });
 
@@ -89,12 +113,28 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
         description: place.description || "",
         lat: place.lat?.toString() || "",
         lng: place.lng?.toString() || "",
-        category: place.category || "Nature",
-        province: place.province || "Siem Reap",
+        category: place.category || "",
+        province: place.province || "",
+        googleMapUrl: "",
         images: place.images || [],
       });
     }
   }, [open, place]);
+
+  // Extract lat/lng from Google Maps URL automatically
+  useEffect(() => {
+    if (formData.googleMapUrl) {
+      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = formData.googleMapUrl.match(regex);
+      if (match) {
+        setFormData((prev) => ({
+          ...prev,
+          lat: match[1],
+          lng: match[2],
+        }));
+      }
+    }
+  }, [formData.googleMapUrl]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -138,17 +178,18 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    if (formData.images.length >= 10) {
+      toast.error("Maximum 10 photos allowed");
+      return;
+    }
+
     setIsUploading(true);
     const file = files[0];
     const data = new FormData();
     data.append("file", file);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: data,
-      });
-
+      const res = await fetch("/api/upload", { method: "POST", body: data });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Upload failed");
 
@@ -174,271 +215,298 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.lat || !formData.lng) {
+      toast.error("Coordinates are required");
+      return;
+    }
     updateMutation.mutate(formData);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-          <Pencil size={14} className="text-zinc-500" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-xl hover:bg-zinc-100 transition-all active:scale-95"
+        >
+          <Pencil size={15} className="text-zinc-500" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] rounded-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-black tracking-tighter">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl shadow-3xl">
+        <div className="bg-zinc-900 p-8 text-white relative overflow-hidden text-left">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <DialogTitle className="text-3xl font-black tracking-tighter flex items-center gap-3">
+            <Pencil className="bg-white/10 p-1.5 rounded-xl" size={32} />
             Edit Location
           </DialogTitle>
-          <DialogDescription className="font-medium">
+          <DialogDescription className="text-zinc-400 mt-2 font-medium">
             Modify the details for this geography.
           </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                EN Name
-              </Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="rounded-xl h-11"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                KH Name
-              </Label>
-              <Input
-                value={formData.nameKh}
-                onChange={(e) =>
-                  setFormData({ ...formData, nameKh: e.target.value })
-                }
-                className="rounded-xl h-11"
-              />
-            </div>
-          </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-              Description
-            </Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className="rounded-xl resize-none h-24"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Category
-              </Label>
-              <Select
-                value={formData.category}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, category: val })
-                }
-              >
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Province
-              </Label>
-              <Select
-                value={formData.province}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, province: val })
-                }
-              >
-                <SelectTrigger className="rounded-xl h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVINCES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Latitude
-              </Label>
-              <Input
-                value={formData.lat}
-                onChange={(e) =>
-                  setFormData({ ...formData, lat: e.target.value })
-                }
-                className="rounded-xl h-11"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Longitude
-              </Label>
-              <Input
-                value={formData.lng}
-                onChange={(e) =>
-                  setFormData({ ...formData, lng: e.target.value })
-                }
-                className="rounded-xl h-11"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-black uppercase tracking-widest text-zinc-400">
-              Gallery ({formData.images.length}/5)
-            </Label>
-            <div className="grid grid-cols-4 gap-2">
-              {formData.images.map((img: string, i: number) => (
-                <div
-                  key={i}
-                  className="relative aspect-square rounded-lg overflow-hidden border group"
-                >
-                  <Image
-                    src={img}
-                    alt="Gallery"
-                    fill
-                    className="object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
-              ))}
-              {formData.images.length < 5 && (
-                <button
-                  type="button"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square border-2 border-dashed rounded-lg flex items-center justify-center text-zinc-400 hover:bg-zinc-50 transition-colors"
-                >
-                  {isUploading ? (
-                    <Loader2 className="animate-spin" size={16} />
-                  ) : (
-                    <ImagePlus size={16} />
-                  )}
-                </button>
-              )}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleUpload}
-              className="hidden"
-              accept="image/*"
-            />
-          </div>
-
-          <DialogFooter className="pt-4">
-            <Button
-              type="submit"
-              className="w-full bg-zinc-900 text-white rounded-xl h-12 font-black uppercase tracking-widest"
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-
-        {(place.reviews?.length ?? 0) > 0 && (
-          <>
-            <div className="flex items-center gap-2 mt-6 mb-4 px-1">
-              <MessageSquare size={16} className="text-rose-500" />
-              <span className="text-sm font-black tracking-tighter uppercase whitespace-nowrap">
-                Community Feedback ({place.reviews.length})
-              </span>
-              <Separator className="flex-1" />
-            </div>
-
-            <div className="space-y-3 pb-4">
-              {place.reviews.map((review: any) => (
-                <div
-                  key={review.id}
-                  className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-100 dark:bg-zinc-800/50 dark:border-zinc-700/50 group"
-                >
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={review.user?.image} />
-                        <AvatarFallback className="text-[8px] font-bold">
-                          {review.user?.name?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-zinc-900 dark:text-white leading-none">
-                          {review.user?.name}
-                        </span>
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={8}
-                              className={
-                                i < review.rating
-                                  ? "fill-amber-400 text-amber-400"
-                                  : "text-zinc-200"
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-lg text-zinc-300 hover:text-rose-600 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
-                      onClick={() => {
-                        if (confirm("Delete this review and rating?")) {
-                          deleteReviewMutation.mutate(review.id);
-                        }
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
+        <ScrollArea className="max-h-[80vh]">
+          <div className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6 text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-zinc-500">
+                    Place Name (EN)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                      required
+                    />
+                    <AlignLeft
+                      className="absolute left-3.5 top-4 text-zinc-400"
+                      size={16}
+                    />
                   </div>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-                    {review.comment}
-                  </p>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-zinc-500">
+                    Place Name (KH)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      value={formData.nameKh}
+                      onChange={(e) =>
+                        setFormData({ ...formData, nameKh: e.target.value })
+                      }
+                      className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    />
+                    <AlignLeft
+                      className="absolute left-3.5 top-4 text-zinc-400"
+                      size={16}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-zinc-500">
+                    Province
+                  </Label>
+                  <Select
+                    required
+                    value={formData.province}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, province: v })
+                    }
+                  >
+                    <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-zinc-400" />
+                        <SelectValue placeholder="Select province" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      {PROVINCES.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-zinc-500">
+                    Category
+                  </Label>
+                  <Select
+                    required
+                    value={formData.category}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, category: v })
+                    }
+                  >
+                    <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                      <div className="flex items-center gap-2">
+                        <Tag size={16} className="text-zinc-400" />
+                        <SelectValue placeholder="Select category" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl">
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-zinc-500">
+                  Google Maps Link
+                </Label>
+                <div className="relative">
+                  <Input
+                    type="url"
+                    value={formData.googleMapUrl}
+                    onChange={(e) =>
+                      setFormData({ ...formData, googleMapUrl: e.target.value })
+                    }
+                    placeholder="Update coordinates from link..."
+                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                  />
+                  <LinkIcon
+                    className="absolute left-3.5 top-4 text-zinc-400"
+                    size={16}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-zinc-500">
+                  Description
+                </Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none h-28"
+                  required
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs font-bold text-zinc-500">
+                  Gallery ({formData.images.length}/10)
+                </Label>
+                <div className="grid grid-cols-5 gap-3">
+                  {formData.images.map((img: string, i: number) => (
+                    <div
+                      key={i}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-zinc-200 group ring-2 ring-transparent hover:ring-zinc-900 transition-all"
+                    >
+                      <Image
+                        src={img}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                  {formData.images.length < 10 && (
+                    <button
+                      type="button"
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square border-2 border-dashed rounded-xl flex items-center justify-center text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all"
+                    >
+                      {isUploading ? (
+                        <Loader2 className="animate-spin" size={20} />
+                      ) : (
+                        <ImagePlus size={20} />
+                      )}
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-zinc-900 text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-2xl shadow-zinc-200 transition-all active:scale-95"
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="animate-spin h-5 w-5" />
+                ) : (
+                  <>
+                    <Save className="mr-2 h-5 w-5" /> Save Changes
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {(place.reviews?.length ?? 0) > 0 && (
+              <div className="space-y-4 pt-4 border-t border-zinc-100 text-left">
+                <div className="flex items-center gap-2 px-1">
+                  <MessageSquare size={16} className="text-zinc-900" />
+                  <span className="text-sm font-black tracking-tighter uppercase">
+                    Community Feedback ({place.reviews.length})
+                  </span>
+                </div>
+
+                <div className="grid gap-3">
+                  {place.reviews.map((review: any) => (
+                    <div
+                      key={review.id}
+                      className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 group transition-colors hover:bg-zinc-100/50"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8 border border-zinc-200">
+                            <AvatarImage src={review.user?.image} />
+                            <AvatarFallback className="text-[10px] font-bold">
+                              {review.user?.name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-zinc-900">
+                              {review.user?.name}
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={10}
+                                  className={
+                                    i < review.rating
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-zinc-200"
+                                  }
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg text-zinc-300 hover:text-rose-600 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                          onClick={() => {
+                            if (confirm("Delete this review and rating?")) {
+                              deleteReviewMutation.mutate(review.id);
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-zinc-500 leading-relaxed font-medium pl-10">
+                        {review.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

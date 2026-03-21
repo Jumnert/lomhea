@@ -42,9 +42,16 @@ export async function POST(
       });
 
       // 2. Create the actual place
-      // Note: We need lat/lng. For now we use 0,0 or try to parse from googleMapUrl if possible,
-      // but the suggestion dialog should ideally provide them.
-      // Re-using data from the request.
+      // Extract coordinates from googleMapUrl
+      let lat = 0;
+      let lng = 0;
+      const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = request.googleMapUrl.match(regex);
+      if (match) {
+        lat = parseFloat(match[1]);
+        lng = parseFloat(match[2]);
+      }
+
       await (tx as any).place.create({
         data: {
           name: request.nameEn,
@@ -53,8 +60,8 @@ export async function POST(
           province: request.province,
           category: request.category,
           images: request.images,
-          lat: 0,
-          lng: 0,
+          lat,
+          lng,
           isVerified: true,
         } as any,
       });
