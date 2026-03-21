@@ -187,17 +187,39 @@ export function AddPlaceDialog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.lat || !formData.lng) {
+
+    // Check if we can extract coordinates before failing
+    let finalLat = formData.lat;
+    let finalLng = formData.lng;
+
+    if (!finalLat || !finalLng) {
+      if (formData.googleMapUrl) {
+        const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+        const match = formData.googleMapUrl.match(regex);
+        if (match) {
+          finalLat = match[1];
+          finalLng = match[2];
+        }
+      }
+    }
+
+    if (!finalLat || !finalLng) {
       toast.error(
-        "Coordinates are required (paste a Google Maps link or enter manually)",
+        "Could not detect location from Google Maps link. Please ensure the link is valid (contains coordinates like @13.4,103.8).",
       );
       return;
     }
+
     if (!formData.province || !formData.category) {
       toast.error("Please fill in all required fields");
       return;
     }
-    createMutation.mutate(formData);
+
+    createMutation.mutate({
+      ...formData,
+      lat: finalLat,
+      lng: finalLng,
+    });
   };
 
   return (
@@ -356,26 +378,6 @@ export function AddPlaceDialog() {
                 placeholder="Tell us what makes this place special..."
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500">
-                Admin Note / Reason
-              </Label>
-              <div className="relative">
-                <Textarea
-                  value={formData.reason}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reason: e.target.value })
-                  }
-                  placeholder="Internal notes about this location..."
-                  className="pl-10 min-h-[80px] rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none"
-                />
-                <MessageSquare
-                  className="absolute left-3.5 top-4 text-zinc-400"
-                  size={16}
-                />
-              </div>
             </div>
 
             <div className="space-y-3">
