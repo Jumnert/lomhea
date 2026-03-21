@@ -56,12 +56,30 @@ export async function POST(req: Request) {
 
         if (lat === 0 && lng === 0) {
           let finalUrl = googleMapUrl;
-          const coordinateRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-          let match = finalUrl.match(coordinateRegex);
+          const patterns = [
+            /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+            /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+            /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/,
+            /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
+            /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+            /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+          ];
+
+          let match = null;
+          let matchedPattern = "";
+          for (const pattern of patterns) {
+            match = finalUrl.match(pattern);
+            if (match) {
+              matchedPattern = pattern.source;
+              break;
+            }
+          }
 
           if (
             !match &&
-            (finalUrl.includes("goo.gl") || finalUrl.includes("t.ly"))
+            (finalUrl.includes("goo.gl") ||
+              finalUrl.includes("t.ly") ||
+              finalUrl.includes("maps.app.goo.gl"))
           ) {
             try {
               let currentUrl = finalUrl;
@@ -77,15 +95,28 @@ export async function POST(req: Request) {
                   : loc;
               }
               finalUrl = currentUrl;
-              match = finalUrl.match(coordinateRegex);
+              for (const pattern of patterns) {
+                match = finalUrl.match(pattern);
+                if (match) {
+                  matchedPattern = pattern.source;
+                  break;
+                }
+              }
             } catch (e) {
               console.error("Auto-approval resolution failed:", e);
             }
           }
 
           if (match) {
-            lat = parseFloat(match[1]);
-            lng = parseFloat(match[2]);
+            if (
+              matchedPattern.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")
+            ) {
+              lat = parseFloat(match[2]);
+              lng = parseFloat(match[1]);
+            } else {
+              lat = parseFloat(match[1]);
+              lng = parseFloat(match[2]);
+            }
           }
         }
 

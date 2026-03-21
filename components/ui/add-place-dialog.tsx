@@ -74,17 +74,28 @@ export function AddPlaceDialog({
     async function resolve() {
       if (!formData.googleMapUrl) return;
 
-      const expandedRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const match = formData.googleMapUrl.match(expandedRegex);
-      if (match) {
-        setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
-        return;
+      const patterns = [
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+        /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      ];
+
+      for (const pattern of patterns) {
+        const match = formData.googleMapUrl.match(pattern);
+        if (match) {
+          setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+          return;
+        }
       }
 
-      if (
+      const isShortLink =
         formData.googleMapUrl.includes("goo.gl") ||
-        formData.googleMapUrl.includes("t.ly")
-      ) {
+        formData.googleMapUrl.includes("t.ly") ||
+        formData.googleMapUrl.includes("maps.app.goo.gl") ||
+        formData.googleMapUrl.length < 40;
+
+      if (isShortLink) {
         setIsResolving(true);
         try {
           const res = await fetch("/api/utils/resolve-map-link", {
@@ -189,11 +200,19 @@ export function AddPlaceDialog({
 
     if (!finalLat || !finalLng) {
       if (formData.googleMapUrl) {
-        const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-        const match = formData.googleMapUrl.match(regex);
-        if (match) {
-          finalLat = match[1];
-          finalLng = match[2];
+        const patterns = [
+          /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+          /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+          /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+          /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        ];
+        for (const pattern of patterns) {
+          const match = formData.googleMapUrl.match(pattern);
+          if (match) {
+            finalLat = match[1];
+            finalLng = match[2];
+            break;
+          }
         }
       }
     }

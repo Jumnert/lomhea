@@ -22,31 +22,40 @@ export async function POST(req: Request) {
       iterations++;
     }
 
-    // 2. Extract from coordinates
-    const regex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = currentUrl.match(regex);
-    if (match) {
-      return NextResponse.json({
-        lat: match[1],
-        lng: match[2],
-        resolvedUrl: currentUrl,
-      });
-    }
+    // 2. Comprehensive Coordinate Extraction
+    const patterns = [
+      /@(-?\d+\.\d+),(-?\d+\.\d+)/, // standard @lat,lng
+      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, // google !3d (lat) !4d (lng)
+      /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse !4d (lng) !3d (lat)
+      /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/, // query params (mobile)
+      /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, // q param (mobile)
+      /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/, // ll param
+    ];
 
-    // 3. Fallback: Check if it's already in the final URL but different format?
-    // Sometimes it's !3d11.55!4d104.91
-    const regexAlt = /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/;
-    const matchAlt = currentUrl.match(regexAlt);
-    if (matchAlt) {
-      return NextResponse.json({
-        lat: matchAlt[1],
-        lng: matchAlt[2],
-        resolvedUrl: currentUrl,
-      });
+    for (const pattern of patterns) {
+      const match = currentUrl.match(pattern);
+      if (match) {
+        // Special case for reverse order
+        if (pattern.source.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")) {
+          return NextResponse.json({
+            lat: match[2],
+            lng: match[1],
+            resolvedUrl: currentUrl,
+          });
+        }
+        return NextResponse.json({
+          lat: match[1],
+          lng: match[2],
+          resolvedUrl: currentUrl,
+        });
+      }
     }
 
     return NextResponse.json(
-      { error: "Could not extract coordinates from resolved URL" },
+      {
+        error: "Could not extract coordinates from resolved URL",
+        resolvedUrl: currentUrl,
+      },
       { status: 404 },
     );
   } catch (error) {
