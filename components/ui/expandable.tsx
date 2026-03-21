@@ -100,7 +100,6 @@ export function ExpandableCard({
 
   return (
     <motion.div
-      layout
       initial={false}
       animate={{
         width: isExpanded ? expandedSize.width : collapsedSize.width,
@@ -113,7 +112,7 @@ export function ExpandableCard({
         mass: 0.5,
       }}
       className={cn(
-        "relative overflow-hidden bg-white dark:bg-zinc-900 rounded-[1.25rem] border border-zinc-200 dark:border-zinc-800",
+        "relative overflow-hidden bg-white dark:bg-zinc-900 rounded-[1.25rem] border border-zinc-200 dark:border-zinc-800 will-change-[width,height,transform]",
         className,
       )}
       {...props}
