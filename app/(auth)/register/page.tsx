@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Mail,
   Lock,
@@ -13,11 +13,14 @@ import {
   Image as ImageIcon,
   User,
   ChevronLeft,
+  RotateCcw,
+  CheckCircle2,
 } from "lucide-react";
 import { signUp, signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -25,13 +28,22 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [step, setStep] = useState<"register" | "otp">("register");
+  const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const inputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
   const router = useRouter();
 
+  // Step 1: Register user account
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const res = await signUp.email({
         email,
@@ -40,9 +52,40 @@ export default function RegisterPage() {
         callbackURL: "/",
       });
 
-      if (res) {
-        setEmailSent(true);
-        toast.success("Account created! Please check your email.");
+      if (res?.error) {
+        toast.error(res.error.message || "Failed to create account");
+        return;
+      }
+
+      // Send OTP
+      const otpRes = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!otpRes.ok) {
+        const err = await otpRes.json();
+        toast.error(err.error || "Failed to send verification code");
+        return;
+      }
+
+      const otpData = await otpRes.json();
+      setStep("otp");
+
+      // Dev mode: auto-fill the OTP boxes if the server returns the code
+      if (otpData.devCode) {
+        const digits = otpData.devCode.split("");
+        setOtpDigits(digits);
+        toast.warning(`🔑 Dev mode — your code is: ${otpData.devCode}`, {
+          duration: 15000,
+          description:
+            "No verified domain yet. Verify at resend.com/domains to send to real users.",
+        });
+      } else {
+        toast.success(
+          "Account created! Check your email for the 4-digit code.",
+        );
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
@@ -51,14 +94,84 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialSignIn = async (provider: "google") => {
+  // Step 2: Verify 4-digit OTP
+  const handleVerifyOtp = async () => {
+    const code = otpDigits.join("");
+    if (code.length !== 4) {
+      toast.error("Please enter the 4-digit code");
+      return;
+    }
+    setOtpLoading(true);
     try {
-      await signIn.social({
-        provider,
-        callbackURL: "/",
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
       });
-    } catch (error: any) {
-      toast.error(`Failed to sign in with ${provider}`);
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Invalid code");
+        return;
+      }
+
+      toast.success("Email verified! Signing you in...");
+      // Sign in after verification
+      await signIn.email({ email, password, callbackURL: "/" });
+      router.push("/");
+    } catch (err: any) {
+      toast.error(err.message || "Verification failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setResending(true);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("Failed to send");
+      toast.success("New code sent to your email");
+      setOtpDigits(["", "", "", ""]);
+      inputRefs[0].current?.focus();
+    } catch {
+      toast.error("Failed to resend code");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleOtpInput = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = digit;
+    setOtpDigits(newDigits);
+
+    // Auto-advance
+    if (digit && index < 3) {
+      inputRefs[index + 1].current?.focus();
+    }
+    // Auto-submit when all 4 filled
+    if (digit && index === 3 && newDigits.every((d) => d !== "")) {
+      setTimeout(() => handleVerifyOtp(), 100);
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      inputRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handleSocialSignIn = async () => {
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/" });
+    } catch {
+      toast.error("Failed to sign in with Google");
     }
   };
 
@@ -78,7 +191,7 @@ export default function RegisterPage() {
 
         <div className="bg-white dark:bg-zinc-900 overflow-hidden rounded-[40px] shadow-2xl border border-zinc-200 dark:border-zinc-800">
           <div className="grid min-h-[700px] lg:grid-cols-2">
-            {/* Left Side - Brand / Info (Reuse login style) */}
+            {/* Left Side */}
             <div className="relative m-4 rounded-3xl bg-[url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1200')] bg-cover bg-center p-12 text-white overflow-hidden">
               <div className="absolute inset-0 bg-primary/40 backdrop-blur-[2px]" />
               <div className="relative z-10 h-full flex flex-col">
@@ -131,40 +244,91 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Right Side - Form or Success View */}
+            {/* Right Side */}
             <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16">
               <div className="mx-auto w-full max-w-md">
-                {emailSent ? (
-                  <div className="text-center">
-                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 text-primary">
-                      <Mail size={40} />
+                {/* ── OTP STEP ── */}
+                {step === "otp" ? (
+                  <div>
+                    <div className="mb-8 text-center">
+                      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Mail size={32} />
+                      </div>
+                      <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        Check your email
+                      </h2>
+                      <p className="mt-2 text-zinc-500 dark:text-zinc-400 text-sm">
+                        We sent a 4-digit code to{" "}
+                        <span className="font-bold text-zinc-900 dark:text-white">
+                          {email}
+                        </span>
+                      </p>
                     </div>
-                    <h2 className="mb-3 text-3xl font-bold text-zinc-900 dark:text-white">
-                      Check Your Email
-                    </h2>
-                    <p className="mb-8 text-zinc-500 dark:text-zinc-400">
-                      We've sent a verification link to{" "}
-                      <span className="font-bold text-zinc-900 dark:text-white">
-                        {email}
-                      </span>
-                      . Please verify your account to continue your adventure.
-                    </p>
-                    <div className="space-y-4">
+
+                    {/* 4-box OTP input */}
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                      {otpDigits.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={inputRefs[i]}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleOtpInput(i, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                          className={cn(
+                            "h-16 w-14 rounded-2xl border-2 text-center text-2xl font-bold transition-all outline-none",
+                            "bg-zinc-50 dark:bg-zinc-900",
+                            digit
+                              ? "border-primary text-zinc-900 dark:text-white"
+                              : "border-zinc-200 dark:border-zinc-700 text-zinc-400",
+                            "focus:border-primary focus:ring-4 focus:ring-primary/10",
+                          )}
+                          autoFocus={i === 0}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={handleVerifyOtp}
+                      disabled={otpLoading || otpDigits.some((d) => !d)}
+                      className="w-full h-14 rounded-2xl bg-primary text-lg font-bold text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {otpLoading ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <>
+                          <CheckCircle2 size={20} />
+                          Verify Code
+                        </>
+                      )}
+                    </button>
+
+                    <div className="mt-5 flex items-center justify-center gap-4 text-sm">
                       <button
-                        onClick={() => setEmailSent(false)}
-                        className="w-full h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 font-bold text-zinc-900 dark:text-white transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                        onClick={handleResendOtp}
+                        disabled={resending}
+                        className="flex items-center gap-1.5 text-primary hover:underline font-medium disabled:opacity-50"
                       >
-                        Back to Register
+                        {resending ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <RotateCcw size={13} />
+                        )}
+                        Resend code
                       </button>
-                      <Link
-                        href="/login"
-                        className="block w-full text-center text-sm font-bold text-primary hover:underline"
+                      <span className="text-zinc-300">·</span>
+                      <button
+                        onClick={() => setStep("register")}
+                        className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white font-medium"
                       >
-                        Wait, I'm already verified! Sign In
-                      </Link>
+                        Change email
+                      </button>
                     </div>
                   </div>
                 ) : (
+                  /* ── REGISTER FORM ── */
                   <>
                     <div className="mb-10">
                       <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
@@ -177,7 +341,7 @@ export default function RegisterPage() {
 
                     <div className="mb-8">
                       <button
-                        onClick={() => handleSocialSignIn("google")}
+                        onClick={handleSocialSignIn}
                         type="button"
                         className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 text-sm font-bold text-zinc-700 dark:text-zinc-300 shadow-sm transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:scale-[1.01] active:scale-[0.99]"
                       >
@@ -192,7 +356,7 @@ export default function RegisterPage() {
 
                     <div className="relative mb-8 text-center text-xs">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-zinc-200 dark:border-zinc-800"></div>
+                        <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
                       </div>
                       <span className="relative bg-white dark:bg-zinc-900 px-4 text-zinc-400 uppercase tracking-widest font-bold">
                         Or use email
@@ -251,6 +415,7 @@ export default function RegisterPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            minLength={8}
                             className="h-12 w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-11 pr-12 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"
                             placeholder="Minimum 8 characters"
                           />

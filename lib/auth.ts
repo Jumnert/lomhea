@@ -18,8 +18,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
-    emailVerificationCallbackURL: "/verify-email",
+    requireEmailVerification: false,
     sendResetPasswordEmail: async ({
       user,
       url,
