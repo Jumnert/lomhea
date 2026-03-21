@@ -142,13 +142,25 @@ export function AddPlaceDialog({
                   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed&hl=en`;
                   const embedRes = await fetch(embedUrl);
                   const html = await embedRes.text();
-                  const match = html.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-                  if (match) {
-                    setFormData((p) => ({
-                      ...p,
-                      lat: match[1],
-                      lng: match[2],
-                    }));
+                  const pairs = [
+                    ...html.matchAll(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/g),
+                  ];
+                  for (const m of pairs) {
+                    let lat = parseFloat(m[1]);
+                    let lng = parseFloat(m[2]);
+
+                    if (lat > 90 && lng < 90) {
+                      [lat, lng] = [lng, lat];
+                    }
+
+                    if (lat > 9 && lat < 15 && lng > 102 && lng < 108) {
+                      setFormData((p) => ({
+                        ...p,
+                        lat: lat.toString(),
+                        lng: lng.toString(),
+                      }));
+                      break;
+                    }
                   }
                 }
               } catch (err) {
