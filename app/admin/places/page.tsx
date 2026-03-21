@@ -34,8 +34,11 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 
+import { useSession } from "@/lib/auth-client";
+
 export default function AdminPlacesPage() {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   const { data: places = [], isLoading } = useQuery<any[]>({
     queryKey: ["admin-places"],
@@ -70,10 +73,20 @@ export default function AdminPlacesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      const userRole = (session?.user as any)?.role;
+      if (userRole === "MODERATOR") {
+        throw new Error(
+          "You do not have authorization to remove locations. Please contact an Admin.",
+        );
+      }
+
       const res = await fetch(`/api/places/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete place");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete place");
+      }
       return res.json();
     },
     onSuccess: () => {

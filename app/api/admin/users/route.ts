@@ -8,7 +8,10 @@ export async function GET() {
     headers: await headers(),
   });
 
-  if (!session || session.user.role !== "ADMIN") {
+  if (
+    !session ||
+    (session.user.role !== "ADMIN" && session.user.role !== "MODERATOR")
+  ) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

@@ -149,9 +149,11 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
                       className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
                         user.role === "ADMIN"
                           ? "bg-zinc-900 text-white"
-                          : user.role === "CONTRIBUTOR"
-                            ? "bg-zinc-100 text-zinc-900"
-                            : "bg-zinc-50 text-zinc-500"
+                          : user.role === "MODERATOR"
+                            ? "bg-blue-600 text-white"
+                            : user.role === "CONTRIBUTOR"
+                              ? "bg-zinc-100 text-zinc-900"
+                              : "bg-zinc-50 text-zinc-500"
                       }`}
                     >
                       {user.role}
@@ -195,6 +197,8 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
                   >
                     <DropdownMenuLabel>Manage User</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+
+                    {/* Role Management */}
                     <DropdownMenuItem
                       className="cursor-pointer gap-2"
                       onClick={() =>
@@ -209,6 +213,47 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
                       <Shield className="h-4 w-4 text-zinc-500" />
                       {user.role === "ADMIN" ? "Revoke Admin" : "Make Admin"}
                     </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2"
+                      onClick={() =>
+                        updateMutation.mutate({
+                          id: user.id,
+                          data: {
+                            role:
+                              user.role === "MODERATOR" ? "USER" : "MODERATOR",
+                          },
+                        })
+                      }
+                    >
+                      <Shield className="h-4 w-4 text-blue-500" />
+                      {user.role === "MODERATOR"
+                        ? "Revoke Moderator"
+                        : "Make Moderator"}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2"
+                      onClick={() =>
+                        updateMutation.mutate({
+                          id: user.id,
+                          data: {
+                            role:
+                              user.role === "CONTRIBUTOR"
+                                ? "USER"
+                                : "CONTRIBUTOR",
+                          },
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4 text-emerald-500" />
+                      {user.role === "CONTRIBUTOR"
+                        ? "Revoke Contributor"
+                        : "Make Contributor"}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
                     <DropdownMenuItem
                       className="cursor-pointer gap-2 text-amber-600"
                       onClick={() =>

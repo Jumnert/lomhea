@@ -162,6 +162,7 @@ model PlaceRequest {
 enum Role {
   USER
   CONTRIBUTOR
+  MODERATOR
   ADMIN
 }
 
