@@ -72,14 +72,20 @@ export function SuggestPlaceDialog() {
       const patterns = [
         /@(-?\d+\.\d+),(-?\d+\.\d+)/,
         /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+        /!4d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, // reverse
         /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
         /[?&]query=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
       ];
 
       for (const pattern of patterns) {
         const match = formData.googleMapUrl.match(pattern);
         if (match) {
-          setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+          if (pattern.source.includes("!4d(-?\\d+\\.\\d+)!3d(-?\\d+\\.\\d+)")) {
+            setFormData((p) => ({ ...p, lat: match[2], lng: match[1] }));
+          } else {
+            setFormData((p) => ({ ...p, lat: match[1], lng: match[2] }));
+          }
           return;
         }
       }
@@ -88,7 +94,7 @@ export function SuggestPlaceDialog() {
         formData.googleMapUrl.includes("goo.gl") ||
         formData.googleMapUrl.includes("t.ly") ||
         formData.googleMapUrl.includes("maps.app.goo.gl") ||
-        formData.googleMapUrl.length < 40;
+        formData.googleMapUrl.length < 50;
 
       if (isShortLink) {
         setIsResolving(true);

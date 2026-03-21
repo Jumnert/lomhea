@@ -83,23 +83,65 @@ export async function POST(req: Request) {
           ) {
             try {
               let currentUrl = finalUrl;
+              const userAgent =
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
               for (let i = 0; i < 5; i++) {
                 const res = await fetch(currentUrl, {
                   method: "HEAD",
                   redirect: "manual",
+                  headers: { "User-Agent": userAgent },
                 });
                 const loc = res.headers.get("location");
-                if (!loc) break;
-                currentUrl = loc.startsWith("/")
-                  ? new URL(loc, currentUrl).href
-                  : loc;
+                if (!loc) {
+                  // Try GET if HEAD fails
+                  const getRes = await fetch(currentUrl, {
+                    method: "GET",
+                    redirect: "manual",
+                    headers: { "User-Agent": userAgent },
+                  });
+                  const getLoc = getRes.headers.get("location");
+                  if (!getLoc) break;
+                  currentUrl = getLoc.startsWith("/")
+                    ? new URL(getLoc, currentUrl).href
+                    : getLoc;
+                } else {
+                  currentUrl = loc.startsWith("/")
+                    ? new URL(loc, currentUrl).href
+                    : loc;
+                }
               }
+
               finalUrl = currentUrl;
               for (const pattern of patterns) {
                 match = finalUrl.match(pattern);
                 if (match) {
                   matchedPattern = pattern.source;
                   break;
+                }
+              }
+
+              // Scraping fallback if still no match in URL
+              if (!match) {
+                const pageRes = await fetch(finalUrl, {
+                  headers: { "User-Agent": userAgent },
+                });
+                const html = await pageRes.text();
+                const bodyPatterns = [
+                  /\[(-?\d+\.\d+),(-?\d+\.\d+)\]/,
+                  /"lat":(-?\d+\.\d+),"lng":(-?\d+\.\d+)/,
+                ];
+                for (const p of bodyPatterns) {
+                  const m = html.match(p);
+                  if (m) {
+                    const scrapLat = parseFloat(m[1]);
+                    const scrapLng = parseFloat(m[2]);
+                    if (Math.abs(scrapLat) > 1 && Math.abs(scrapLng) > 1) {
+                      lat = scrapLat;
+                      lng = scrapLng;
+                      break;
+                    }
+                  }
                 }
               }
             } catch (e) {
