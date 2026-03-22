@@ -12,9 +12,19 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "@better-auth/core": "1.5.5",
+    "@better-auth/kysely-adapter": "1.5.5",
+    "@better-auth/memory-adapter": "1.5.5",
+    "@better-auth/prisma-adapter": "1.5.5",
+    "@better-auth/redis-storage": "1.5.5",
+    "@better-auth/telemetry": "1.5.5",
+    "better-auth": "1.5.5"
+  },
   "dependencies": {
-    "@better-auth/prisma-adapter": "^1.5.3",
-    "@better-auth/redis-storage": "^1.5.5",
+    "@better-auth/core": "1.5.5",
+    "@better-auth/prisma-adapter": "1.5.5",
+    "@better-auth/redis-storage": "1.5.5",
     "@neondatabase/serverless": "^1.0.2",
     "@number-flow/react": "^0.6.0",
     "@prisma/adapter-neon": "^7.4.2",
@@ -37,7 +47,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "bakong-khqr": "^1.0.20",
-    "better-auth": "latest",
+    "better-auth": "1.5.5",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.9.0",
