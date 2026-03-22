@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { invalidatePattern } from "@/lib/redis-utils";
 
 export async function POST(
   req: Request,
@@ -23,49 +24,44 @@ export async function POST(
       return NextResponse.json({ error: "Invalid rating" }, { status: 400 });
     }
 
-    // Manual Upsert to bypass generated client type issues
-    const existingReview = await (prisma as any).review.findFirst({
+    // 1. Create or update the review
+    const review = await (prisma as any).review.upsert({
       where: {
+        userId_placeId: {
+          userId: session.user.id,
+          placeId: placeId,
+        },
+      },
+      update: { rating, comment },
+      create: {
+        rating,
+        comment,
         userId: session.user.id,
-        placeId: placeId,
+        placeId,
       },
     });
 
-    let review;
-    if (existingReview) {
-      review = await (prisma as any).review.update({
-        where: { id: existingReview.id },
-        data: { rating, comment },
-      });
-    } else {
-      review = await (prisma as any).review.create({
-        data: {
-          rating,
-          comment,
-          userId: session.user.id,
-          placeId,
-        },
-      });
-    }
-
-    // 2. Fetch all ratings to calculate average
-    const allReviews = await (prisma as any).review.findMany({
+    // 2. Perform aggregation directly in the DB (much faster)
+    const stats = await (prisma as any).review.aggregate({
       where: { placeId },
-      select: { rating: true },
+      _avg: { rating: true },
+      _count: { rating: true },
     });
 
-    const averageRating =
-      allReviews.reduce((acc: number, curr: any) => acc + curr.rating, 0) /
-      allReviews.length;
+    const averageRating = stats._avg.rating || 0;
+    const reviewCount = stats._count.rating || 0;
 
     // 3. Update the place with the new average and count
     await (prisma as any).place.update({
       where: { id: placeId },
       data: {
         rating: averageRating,
-        reviewCount: allReviews.length,
+        reviewCount: reviewCount,
       },
     });
+
+    // 4. Invalidate global places cache
+    await invalidatePattern("places:*");
 
     return NextResponse.json(review);
   } catch (error) {
