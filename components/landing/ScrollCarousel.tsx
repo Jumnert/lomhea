@@ -12,7 +12,7 @@ const DESTINATIONS = [
     title: "Angkor Wat",
     src: "https://plus.unsplash.com/premium_photo-1661962946869-4cf54aa4c778?w=1200&auto=format&fit=crop&q=80",
     description:
-      "The soul of Cambodia. A UNESCO World Heritage site rising from the jungle mist at dawn — the largest religious monument in the world.",
+      "The soul of Cambodia. A UNESCO World Heritage site rising from the jungle mist at dawn - the largest religious monument in the world.",
   },
   {
     category: "Metropolis",
@@ -26,14 +26,14 @@ const DESTINATIONS = [
     title: "Kampot",
     src: "https://images.unsplash.com/photo-1677209806836-54e9879c0c25?w=1200&auto=format&fit=crop&q=80",
     description:
-      "Timeless charm along the Praek Tuek Chhu river — salt fields, world-renowned pepper farms, and French colonial architecture.",
+      "Timeless charm along the Praek Tuek Chhu river - salt fields, world-renowned pepper farms, and French colonial architecture.",
   },
   {
     category: "Wild Frontier",
     title: "Mondulkiri",
     src: "https://plus.unsplash.com/premium_photo-1664117436445-76133b33b07a?w=1200&auto=format&fit=crop&q=80",
     description:
-      "Rolling highlands and remote jungle. Misty waterfalls and indigenous villages — a world away from the heat of the plains.",
+      "Rolling highlands and remote jungle. Misty waterfalls and indigenous villages - a world away from the heat of the plains.",
   },
   {
     category: "Island",
@@ -47,7 +47,7 @@ const DESTINATIONS = [
     title: "Rural Majesty",
     src: "https://images.unsplash.com/photo-1572984011334-290e519d45f6?w=1200&auto=format&fit=crop&q=80",
     description:
-      "Intricate carvings, handwoven silk, and the steady rhythm of village life — a living museum of the Khmer spirit.",
+      "Intricate carvings, handwoven silk, and the steady rhythm of village life - a living museum of the Khmer spirit.",
   },
 ];
 
@@ -69,7 +69,6 @@ export default function ScrollCarousel() {
       ScrollTrigger.create({
         trigger: section,
         start: "top top",
-        // Each card gets one full viewport height of scroll
         end: `+=${(TOTAL - 1) * window.innerHeight}`,
         pin: true,
         pinSpacing: true,
@@ -102,9 +101,8 @@ export default function ScrollCarousel() {
     <section
       ref={sectionRef}
       id="destinations"
-      className="relative w-full h-screen overflow-hidden bg-whiten"
+      className="relative w-full h-screen overflow-hidden bg-white"
     >
-      {/* Horizontal card track */}
       <div
         ref={trackRef}
         className="flex h-full will-change-transform items-center"
@@ -115,7 +113,6 @@ export default function ScrollCarousel() {
             key={dest.title}
             className="relative w-screen h-full shrink-0 flex items-end p-4 md:p-6"
           >
-            {/* Rounded framed image container */}
             <div className="relative w-full h-full rounded-3xl overflow-hidden">
               <img
                 src={dest.src}
@@ -144,7 +141,6 @@ export default function ScrollCarousel() {
         ))}
       </div>
 
-      {/* Progress dots */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
         {DESTINATIONS.map((_, i) => (
           <div
@@ -156,7 +152,6 @@ export default function ScrollCarousel() {
         ))}
       </div>
 
-      {/* Scroll hint — first card only */}
       <div
         className={`absolute bottom-8 right-8 md:right-16 z-20 pointer-events-none transition-opacity duration-500 ${
           activeIndex === 0 ? "opacity-100" : "opacity-0"
