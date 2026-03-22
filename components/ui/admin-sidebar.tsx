@@ -61,14 +61,14 @@ export const AdminSidebar = memo(() => {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link prefetch={false} href="/admin">
-                <div className="bg-zinc-900 text-white flex aspect-square size-8 items-center justify-center rounded-lg">
+                <div className="bg-accent/50 text-accent-foreground flex aspect-square size-8 items-center justify-center rounded-md">
                   <LayoutDashboard className="h-5 w-5" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-black tracking-tight uppercase">
+                  <span className="truncate font-semibold tracking-tight uppercase">
                     Lomhea
                   </span>
-                  <span className="truncate text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  <span className="truncate text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                     Admin Panel
                   </span>
                 </div>
@@ -103,16 +103,6 @@ export const AdminSidebar = memo(() => {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? <Sun /> : <Moon />}
-              <span className="font-bold">
-                {theme === "dark" ? "Light Mode" : "Dark Mode"}
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/">

@@ -1,19 +1,17 @@
 "use client";
 
 import { memo } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import {
-  Plus,
-  Calendar,
-  Mail,
-  MapPin,
-  MoreHorizontal,
-  Shield,
-  Trash,
-  Ban,
-  Loader2,
-} from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +20,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  MoreHorizontal,
+  Shield,
+  Trash,
+  Ban,
+  Loader2,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -82,207 +88,168 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
   if (isLoading) {
     return (
       <div className="h-64 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="border-border bg-card/40 rounded-xl border p-3 sm:p-6">
-      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-black tracking-tight text-zinc-900">
+          <h3 className="text-lg font-semibold tracking-tight">
             Platform Users
           </h3>
-          <p className="text-muted-foreground text-sm font-medium">
+          <p className="text-muted-foreground text-sm">
             Manage registrations and permissions.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onAddUser}
-            className="font-bold"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add User
-          </Button>
-        </div>
+        <Button variant="default" size="sm" onClick={onAddUser}>
+          <Plus className="mr-2 h-4 w-4" /> Add User
+        </Button>
       </div>
 
-      <div className="space-y-2">
-        {users.length === 0 ? (
-          <div className="h-32 flex items-center justify-center text-muted-foreground italic text-sm">
-            No users found.
-          </div>
-        ) : (
-          users.map((user, index) => (
-            <motion.div
-              key={user.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="group hover:bg-zinc-50 flex flex-col items-start gap-4 rounded-lg p-4 transition-colors sm:flex-row sm:items-center border border-transparent hover:border-zinc-200"
-            >
-              <div className="flex w-full items-center gap-4 sm:w-auto">
-                <div className="relative">
-                  <img
-                    src={user.image || `https://avatar.vercel.sh/${user.id}`}
-                    alt={user.name || "User"}
-                    width={40}
-                    height={40}
-                    className="rounded-full bg-zinc-100"
-                  />
-                  <div
-                    className={`border-background absolute -right-1 -bottom-1 h-3 w-3 rounded-full border-2 ${
-                      user.banned ? "bg-rose-500" : "bg-emerald-500"
-                    }`}
-                  />
-                </div>
-
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="truncate text-sm font-bold tracking-tight text-zinc-900">
-                      {user.name || "UNNAMED"}
-                    </h4>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
-                        user.role === "ADMIN"
-                          ? "bg-zinc-900 text-white"
-                          : user.role === "MODERATOR"
-                            ? "bg-blue-600 text-white"
-                            : user.role === "CONTRIBUTOR"
-                              ? "bg-zinc-100 text-zinc-900"
-                              : "bg-zinc-50 text-zinc-500"
-                      }`}
+      <div className="rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[280px]">User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="hidden md:table-cell">Joined</TableHead>
+              <TableHead className="hidden md:table-cell text-center">
+                Reviews
+              </TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No users found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.image} />
+                        <AvatarFallback>
+                          {user.name?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {user.name || "Unnamed"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={user.role === "ADMIN" ? "default" : "secondary"}
                     >
                       {user.role}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground mt-1 flex flex-col gap-2 text-[11px] sm:flex-row sm:items-center sm:gap-4 font-bold">
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px]">
-                      <Calendar className="h-3 w-3" />
-                      <span>
-                        Joined {new Date(user.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="ml-auto flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <div className="flex items-center gap-1 text-[11px] font-black uppercase text-zinc-400">
-                  <Shield className="h-3 w-3" />
-                  <span>{user._count?.reviews || 0} Reviews</span>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-zinc-200 rounded-lg"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-48 rounded-xl font-bold p-2"
-                  >
-                    <DropdownMenuLabel>Manage User</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-
-                    {/* Role Management */}
-                    <DropdownMenuItem
-                      className="cursor-pointer gap-2"
-                      onClick={() =>
-                        updateMutation.mutate({
-                          id: user.id,
-                          data: {
-                            role: user.role === "ADMIN" ? "USER" : "ADMIN",
-                          },
-                        })
-                      }
-                    >
-                      <Shield className="h-4 w-4 text-zinc-500" />
-                      {user.role === "ADMIN" ? "Revoke Admin" : "Make Admin"}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      className="cursor-pointer gap-2"
-                      onClick={() =>
-                        updateMutation.mutate({
-                          id: user.id,
-                          data: {
-                            role:
-                              user.role === "MODERATOR" ? "USER" : "MODERATOR",
-                          },
-                        })
-                      }
-                    >
-                      <Shield className="h-4 w-4 text-blue-500" />
-                      {user.role === "MODERATOR"
-                        ? "Revoke Moderator"
-                        : "Make Moderator"}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      className="cursor-pointer gap-2"
-                      onClick={() =>
-                        updateMutation.mutate({
-                          id: user.id,
-                          data: {
-                            role:
-                              user.role === "CONTRIBUTOR"
-                                ? "USER"
-                                : "CONTRIBUTOR",
-                          },
-                        })
-                      }
-                    >
-                      <Plus className="h-4 w-4 text-emerald-500" />
-                      {user.role === "CONTRIBUTOR"
-                        ? "Revoke Contributor"
-                        : "Make Contributor"}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuItem
-                      className="cursor-pointer gap-2 text-amber-600"
-                      onClick={() =>
-                        updateMutation.mutate({
-                          id: user.id,
-                          data: { banned: !user.banned },
-                        })
-                      }
-                    >
-                      <Ban className="h-4 w-4" />{" "}
-                      {user.banned ? "Unban Account" : "Ban Account"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="cursor-pointer gap-2 text-rose-500 hover:bg-rose-50"
-                      onClick={() => {
-                        if (confirm("Permanently delete this user?")) {
-                          deleteMutation.mutate(user.id);
-                        }
-                      }}
-                    >
-                      <Trash className="h-4 w-4" /> Delete User
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </motion.div>
-          ))
-        )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.banned ? "destructive" : "outline"}>
+                      {user.banned ? "Banned" : "Active"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-center text-xs font-medium">
+                    {user._count?.reviews || 0}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Manage User</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() =>
+                            updateMutation.mutate({
+                              id: user.id,
+                              data: {
+                                role: user.role === "ADMIN" ? "USER" : "ADMIN",
+                              },
+                            })
+                          }
+                        >
+                          <Shield className="mr-2 h-4 w-4" />
+                          {user.role === "ADMIN"
+                            ? "Revoke Admin"
+                            : "Make Admin"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            updateMutation.mutate({
+                              id: user.id,
+                              data: {
+                                role:
+                                  user.role === "MODERATOR"
+                                    ? "USER"
+                                    : "MODERATOR",
+                              },
+                            })
+                          }
+                        >
+                          <Shield className="mr-2 h-4 w-4" />
+                          {user.role === "MODERATOR"
+                            ? "Revoke Moderator"
+                            : "Make Moderator"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className={
+                            user.banned ? "text-primary" : "text-destructive"
+                          }
+                          onClick={() =>
+                            updateMutation.mutate({
+                              id: user.id,
+                              data: { banned: !user.banned },
+                            })
+                          }
+                        >
+                          <Ban className="mr-2 h-4 w-4" />
+                          {user.banned ? "Unban Account" : "Ban Account"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive font-medium"
+                          onClick={() => {
+                            if (confirm("Permanently delete this user?")) {
+                              deleteMutation.mutate(user.id);
+                            }
+                          }}
+                        >
+                          <Trash className="mr-2 h-4 w-4" /> Delete User
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

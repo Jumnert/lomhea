@@ -9,20 +9,15 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  ShieldAlert,
-  ShieldCheck,
   Users,
   Activity,
   Lock,
   Smartphone,
-  Globe,
   AlertCircle,
-  Eye,
-  Trash2,
   RefreshCw,
-  MoreVertical,
   Key,
   Shield,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Table,
@@ -42,11 +37,10 @@ import {
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2 } from "lucide-react";
 
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"];
 
@@ -62,8 +56,11 @@ export default function SecurityPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="animate-spin text-zinc-400" size={32} />
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+        <p className="text-sm text-muted-foreground">
+          Performing Security Audit...
+        </p>
       </div>
     );
   }
@@ -81,134 +78,123 @@ export default function SecurityPage() {
       : 100;
 
   return (
-    <div className="flex flex-col gap-8 p-8 bg-zinc-50/50 dark:bg-zinc-950/50 min-h-screen">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter uppercase flex items-center gap-3">
-            <ShieldAlert
-              className={cn(
-                securityScore > 80 ? "text-emerald-500" : "text-amber-500",
-              )}
-              size={36}
-            />
-            Security Nexus
-          </h1>
-          <p className="text-zinc-500 font-medium mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Security Nexus</h1>
+          <p className="text-sm text-muted-foreground">
             Active monitoring and systemic defense administration.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Badge className="h-10 px-4 rounded-xl bg-emerald-50 text-emerald-600 border-none font-bold flex gap-2">
-            <ShieldCheck size={16} /> All Systems Nominal
+        <div className="flex items-center gap-3">
+          <Badge variant="secondary" className="gap-1 px-3">
+            <ShieldCheck size={14} className="text-primary" />
+            All Systems Nominal
           </Badge>
           <Button
             variant="outline"
-            className="h-10 px-4 rounded-xl font-bold bg-white dark:bg-zinc-900 shadow-sm border"
+            size="sm"
             onClick={() => refetch()}
+            className="gap-2"
           >
-            <RefreshCw size={16} className="mr-2" /> Refresh Audit
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+            Refresh Audit
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SecurityStatCard
           title="Total Users"
           value={stats.totalUsers}
-          icon={<Users size={18} />}
+          icon={<Users size={16} />}
           desc="Overall identity registry"
         />
         <SecurityStatCard
           title="Admin Accounts"
           value={stats.adminUsers}
-          icon={<Lock size={18} />}
+          icon={<Lock size={16} />}
           desc="Privileged identities"
-          color="amber"
         />
         <SecurityStatCard
           title="Banned"
           value={stats.bannedUsers}
-          icon={<AlertCircle size={18} />}
+          icon={<AlertCircle size={16} />}
           desc="Threats eliminated"
-          color="rose"
         />
         <SecurityStatCard
           title="Active Sessions"
           value={stats.activeSessions}
-          icon={<Activity size={18} />}
-          desc="Current authentication tokens"
-          color="emerald"
+          icon={<Activity size={16} />}
+          desc="Current tokens"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Security Score Panel */}
-        <Card className="lg:col-span-1 border-none bg-zinc-900 text-white rounded-3xl overflow-hidden shadow-2xl relative">
+        <Card className="lg:col-span-1 bg-primary text-primary-foreground border-none">
           <CardHeader>
-            <CardTitle className="text-zinc-400 font-black uppercase text-[10px] tracking-widest">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider opacity-80">
               Global Security Integrity
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            <div className="relative w-40 h-40 flex items-center justify-center">
+            <div className="relative w-36 h-36 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
                 <circle
-                  cx="80"
-                  cy="80"
-                  r="70"
+                  cx="72"
+                  cy="72"
+                  r="64"
                   stroke="currentColor"
-                  strokeWidth="12"
+                  strokeWidth="8"
                   fill="transparent"
-                  className="text-white/5"
+                  className="opacity-10"
                 />
                 <circle
-                  cx="80"
-                  cy="80"
-                  r="70"
+                  cx="72"
+                  cy="72"
+                  r="64"
                   stroke="currentColor"
-                  strokeWidth="12"
+                  strokeWidth="8"
                   fill="transparent"
-                  strokeDasharray={439.8}
-                  strokeDashoffset={439.8 - (439.8 * securityScore) / 100}
-                  className={cn(
-                    "transition-all duration-1000",
-                    securityScore > 80 ? "text-emerald-400" : "text-amber-400",
-                  )}
+                  strokeDasharray={402}
+                  strokeDashoffset={402 - (402 * securityScore) / 100}
+                  className="transition-all duration-1000"
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="text-4xl font-black">{securityScore}</span>
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-tighter">
+                <span className="text-4xl font-bold">{securityScore}</span>
+                <span className="text-[10px] font-medium uppercase opacity-70">
                   Points
                 </span>
               </div>
             </div>
-            <p className="mt-8 text-center text-sm text-zinc-400 font-medium px-4 pb-8">
+            <p className="mt-6 text-center text-xs opacity-80 font-medium px-4 pb-4">
               Your system security is currently rated as{" "}
-              <span className="text-white font-bold italic">PRO-LEVEL</span>. No
-              critical breaches detected in last 24h.
+              <span className="font-bold underline underline-offset-4">
+                OPTIMAL
+              </span>
+              . No critical breaches detected.
             </p>
           </CardContent>
         </Card>
 
         {/* Identity Distribution */}
-        <Card className="lg:col-span-2 border-none shadow-xl rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-xl font-black tracking-tighter uppercase flex items-center gap-2">
-              <Shield size={20} className="text-blue-500" /> Identity
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Shield size={18} className="text-primary" /> Identity
               Distribution
             </CardTitle>
-            <CardDescription className="font-bold uppercase text-[10px] tracking-widest">
-              Breakdown by account privileges
-            </CardDescription>
+            <CardDescription>Breakdown by account privileges</CardDescription>
           </CardHeader>
-          <CardContent className="h-[250px] w-full flex items-center">
+          <CardContent className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={roleStats}
-                  innerRadius={60}
-                  outerRadius={80}
+                  innerRadius={45}
+                  outerRadius={65}
                   paddingAngle={5}
                   dataKey="value"
                   stroke="none"
@@ -222,9 +208,9 @@ export default function SecurityPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "16px",
-                    border: "none",
-                    boxShadow: "10px 10px 20px rgba(0,0,0,0.05)",
+                    backgroundColor: "hsl(var(--popover))",
+                    borderRadius: "var(--radius)",
+                    border: "1px solid hsl(var(--border))",
                   }}
                 />
                 <Legend
@@ -232,6 +218,7 @@ export default function SecurityPage() {
                   align="right"
                   layout="vertical"
                   iconType="circle"
+                  wrapperStyle={{ fontSize: "12px" }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -239,69 +226,59 @@ export default function SecurityPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Session Logs */}
-        <Card className="border-none shadow-xl rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-black tracking-tighter uppercase flex items-center gap-2">
-              <Smartphone size={20} className="text-zinc-400" /> Recent Session
-              Logs
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Smartphone size={18} className="text-muted-foreground" />
+              Recent Session Logs
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-zinc-50 dark:bg-zinc-800/50">
-                  <TableHead className="pl-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    User
-                  </TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    IP Address
-                  </TableHead>
-                  <TableHead className="text-right pr-6 text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                    Activity
-                  </TableHead>
+                <TableRow>
+                  <TableHead className="pl-6">User</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead className="text-right pr-6">Activity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentSessions.map((session: any) => (
-                  <TableRow
-                    key={session.id}
-                    className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
-                  >
-                    <TableCell className="pl-6 py-4">
+                  <TableRow key={session.id}>
+                    <TableCell className="pl-6 py-3">
                       <div className="flex items-center gap-3">
-                        <Image
-                          src={
-                            session.user.image ||
-                            `https://avatar.vercel.sh/${session.user.name}`
-                          }
-                          alt="avatar"
-                          width={32}
-                          height={32}
-                          className="rounded-full shadow-sm"
-                        />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm tracking-tight">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={session.user.image} />
+                          <AvatarFallback>
+                            {session.user.name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium text-sm truncate">
                             {session.user.name}
                           </span>
-                          <Badge className="w-fit text-[8px] font-black uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-none px-1 h-3 mt-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] w-fit h-4 px-1"
+                          >
                             {session.user.role}
                           </Badge>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-xs font-bold text-zinc-400">
+                      <span className="font-mono text-xs text-muted-foreground">
                         {session.ipAddress || "127.0.0.1"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex flex-col items-end">
-                        <span className="text-xs font-bold tracking-tighter">
+                        <span className="text-xs font-semibold">
                           {new Date(session.createdAt).toLocaleTimeString()}
                         </span>
-                        <span className="text-[9px] text-zinc-400 font-medium">
+                        <span className="text-[10px] text-muted-foreground">
                           {new Date(session.createdAt).toLocaleDateString()}
                         </span>
                       </div>
@@ -315,34 +292,29 @@ export default function SecurityPage() {
 
         {/* Global Security Controls */}
         <div className="space-y-6">
-          <Card className="border-none shadow-xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                <ShieldCheck size={14} className="text-emerald-500" /> Active
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
+                <ShieldCheck size={14} className="text-primary" /> Active
                 Defenses
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 p-6">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
                 <div className="space-y-0.5">
-                  <Label className="font-bold tracking-tight">
-                    Two-Factor Force
-                  </Label>
-                  <p className="text-[10px] text-zinc-500 font-medium">
+                  <Label className="font-semibold">Two-Factor Force</Label>
+                  <p className="text-[10px] text-muted-foreground">
                     Require mandatory MFA for all moderator accounts.
                   </p>
                 </div>
-                <Switch
-                  defaultChecked
-                  className="data-[state=checked]:bg-emerald-500"
-                />
+                <Switch defaultChecked />
               </div>
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 opacity-60">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/10 opacity-60">
                 <div className="space-y-0.5">
-                  <Label className="font-bold tracking-tight italic">
+                  <Label className="font-semibold italic">
                     Brute Force Quarantine
                   </Label>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-tighter font-black">
+                  <p className="text-[10px] text-muted-foreground">
                     Feature locked to PRO-License.
                   </p>
                 </div>
@@ -351,19 +323,14 @@ export default function SecurityPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden relative group cursor-pointer hover:border-emerald-500 transition-all">
-            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreVertical size={16} className="text-zinc-400" />
-            </div>
+          <Card className="group cursor-pointer hover:border-primary/50 transition-colors">
             <CardContent className="p-6 flex items-center gap-4">
-              <div className="p-4 bg-primary/10 rounded-2xl text-primary shadow-inner">
-                <Key size={24} />
+              <div className="p-3 bg-primary/10 rounded-lg text-primary">
+                <Key size={20} />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-black uppercase tracking-tighter">
-                  API Infrastructure
-                </h3>
-                <p className="text-xs text-zinc-500 font-medium">
+                <h3 className="text-base font-bold">API Infrastructure</h3>
+                <p className="text-xs text-muted-foreground">
                   Manage server-side secrets and authentication keys.
                 </p>
               </div>
@@ -375,42 +342,23 @@ export default function SecurityPage() {
   );
 }
 
-function SecurityStatCard({ title, value, icon, desc, color = "blue" }: any) {
-  const colors = {
-    blue: "text-blue-500 bg-blue-50 dark:bg-blue-500/10",
-    amber: "text-amber-500 bg-amber-50 dark:bg-amber-500/10",
-    rose: "text-rose-500 bg-rose-50 dark:bg-rose-500/10",
-    emerald: "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10",
-  }[color as "blue" | "amber" | "rose" | "emerald"];
-
+function SecurityStatCard({ title, value, icon, desc }: any) {
   return (
-    <Card className="border-none shadow-lg rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 overflow-hidden transition-all hover:scale-[1.02] cursor-default group">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className={cn(
-              "p-2.5 rounded-2xl transition-all group-hover:bg-zinc-900 group-hover:text-white",
-              colors,
-            )}
-          >
+    <Card className="transition-all hover:bg-muted/10 cursor-default">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
             {icon}
           </div>
-          <Badge
-            className={cn(
-              "text-[9px] font-black uppercase tracking-widest border-none px-2",
-              colors,
-            )}
-          >
+          <Badge variant="outline" className="text-[9px] uppercase">
             Monitoring
           </Badge>
         </div>
-        <h3 className="text-zinc-400 font-black text-[10px] uppercase tracking-widest mb-1">
+        <h3 className="text-muted-foreground font-semibold text-[10px] uppercase tracking-wider mb-1">
           {title}
         </h3>
-        <span className="text-3xl font-black tracking-tight">{value}</span>
-        <p className="text-[10px] text-zinc-500 font-bold mt-1 uppercase italic">
-          {desc}
-        </p>
+        <span className="text-2xl font-bold tracking-tight">{value}</span>
+        <p className="text-[10px] text-muted-foreground mt-1 italic">{desc}</p>
       </CardContent>
     </Card>
   );

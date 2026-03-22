@@ -80,8 +80,8 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Overview of your Lomhea platform.
         </p>
       </div>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground">
                   {stat.description}
                 </p>
               </CardContent>
@@ -113,11 +113,11 @@ export default function AdminDashboard() {
         {/* Recent Reviews */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+            <div className="space-y-1">
               <CardTitle className="text-base">Recent Reviews</CardTitle>
               <CardDescription>Latest community feedback</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild>
               <Link href="/admin/reviews">View all</Link>
             </Button>
           </CardHeader>
@@ -129,36 +129,36 @@ export default function AdminDashboard() {
             ) : (
               overview?.recentReviews?.map((review: any) => (
                 <div key={review.id} className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8 mt-0.5">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={review.user?.image} />
-                    <AvatarFallback className="text-xs">
+                    <AvatarFallback>
                       {review.user?.name?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium truncate">
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">
                         {review.user?.name}
                       </span>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            size={10}
+                            size={12}
                             className={
                               i < review.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground/30"
+                                ? "fill-primary text-primary"
+                                : "text-muted-foreground/20"
                             }
                           />
                         ))}
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground">
                       {review.place?.name}
                     </p>
                     {review.comment && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                      <p className="text-xs text-foreground line-clamp-1">
                         {review.comment}
                       </p>
                     )}
@@ -172,13 +172,13 @@ export default function AdminDashboard() {
         {/* Pending Requests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+            <div className="space-y-1">
               <CardTitle className="text-base">Pending Requests</CardTitle>
               <CardDescription>
                 User-submitted location suggestions
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild>
               <Link href="/admin/requests">View all</Link>
             </Button>
           </CardHeader>
@@ -189,17 +189,19 @@ export default function AdminDashboard() {
               </p>
             ) : (
               overview?.pendingRequests?.map((req: any) => (
-                <div key={req.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-                    <Map size={14} className="text-muted-foreground" />
+                <div key={req.id} className="flex items-center gap-4">
+                  <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <Map size={16} className="text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{req.nameEn}</p>
+                    <p className="text-sm font-semibold truncate">
+                      {req.nameEn}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       by {req.user?.name} · {req.province}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] shrink-0">
+                  <Badge variant="secondary" className="shrink-0">
                     Pending
                   </Badge>
                 </div>
@@ -216,7 +218,7 @@ export default function AdminDashboard() {
           <CardDescription>Jump to important sections</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Manage Places", href: "/admin/places", icon: MapPin },
               {
@@ -236,11 +238,11 @@ export default function AdminDashboard() {
                 <Button
                   key={action.href}
                   variant="outline"
-                  className="h-auto py-3 flex-col gap-2"
+                  className="h-auto py-4 flex-col gap-2"
                   asChild
                 >
                   <Link href={action.href}>
-                    <Icon size={18} className="text-muted-foreground" />
+                    <Icon size={20} className="text-muted-foreground" />
                     <span className="text-xs">{action.label}</span>
                   </Link>
                 </Button>
