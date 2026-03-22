@@ -17,12 +17,13 @@ export default function Globe3D() {
       <div className="absolute inset-x-0 -top-[10%] -bottom-[6%] w-full pointer-events-none z-0 opacity-65 overflow-hidden">
         <Prism
           animationType="rotate"
-          glow={1.25}
+          palette="cambodia"
+          glow={1.2}
           noise={0.06}
-          scale={2.85}
-          colorFrequency={1.2}
-          bloom={1.12}
-          timeScale={0.85}
+          scale={2.8}
+          colorFrequency={1}
+          bloom={1.05}
+          timeScale={0.8}
         />
       </div>
 
@@ -63,12 +64,12 @@ export default function Globe3D() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
         >
-          <div className="relative z-10 mx-auto max-w-[90vw] lg:max-w-7xl overflow-hidden rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] border border-white/40">
-            <ShineBorder
-              borderWidth={2}
-              duration={12}
-              shineColor={["#7dd3fc", "#60a5fa", "#c084fc"]}
-            />
+            <div className="relative z-10 mx-auto max-w-[90vw] lg:max-w-7xl overflow-hidden rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] border border-white/40">
+              <ShineBorder
+                borderWidth={4}
+                duration={20}
+                shineColor={["#be185d", "#db2777", "#f9a8d4", "#ddd6fe"]}
+              />
             <img
               src="/heroImg/whitevarient.png"
               alt="Lomhea Dashboard Preview"

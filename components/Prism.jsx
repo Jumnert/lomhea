@@ -6,6 +6,7 @@ const Prism = ({
   height = 3.5,
   baseWidth = 5.5,
   animationType = 'rotate',
+  palette = 'default',
   glow = 1,
   offset = { x: 0, y: 0 },
   noise = 0.5,
@@ -37,6 +38,7 @@ const Prism = ({
     const HUE = hueShift || 0;
     const CFREQ = Math.max(0.0, colorFrequency || 1);
     const BLOOM = Math.max(0.0, bloom || 1);
+    const PALMODE = palette === 'cambodia' ? 1 : 0;
     const RSX = 1;
     const RSY = 1;
     const RSZ = 1;
@@ -89,6 +91,7 @@ const Prism = ({
       uniform float uHueShift;
       uniform float uColorFreq;
       uniform float uBloom;
+      uniform int   uPaletteMode;
       uniform float uCenterShift;
       uniform float uInvBaseHalf;
       uniform float uInvHeight;
@@ -135,6 +138,34 @@ const Prism = ({
           -0.497,  0.296,  0.201
         );
         return W + U * c + V * s;
+      }
+
+      vec3 applyCambodiaPalette(vec3 c){
+        float t = clamp(dot(c, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
+        vec3 khBlue = vec3(0.043, 0.247, 0.584);
+        vec3 khRed = vec3(0.784, 0.063, 0.180);
+        vec3 khWhite = vec3(0.98, 0.98, 0.98);
+        
+        // Palette balance requested:
+        // red 25, blue 20, white 10, blue 20, red 15
+        // (implemented as five luminance bands).
+        float redBandA = exp(-pow((t - 0.34) / 0.18, 2.0)) * 0.25;
+        float blueBandA = exp(-pow((t - 0.20) / 0.17, 2.0)) * 0.20;
+        float whiteBand = exp(-pow((t - 0.52) / 0.14, 2.0)) * 0.10;
+        float blueBandB = exp(-pow((t - 0.70) / 0.16, 2.0)) * 0.20;
+        float redBandB = exp(-pow((t - 0.86) / 0.14, 2.0)) * 0.15;
+
+        float wBlue = blueBandA + blueBandB + c.b * 0.10;
+        float wRed = redBandA + redBandB + c.r * 0.10;
+        float wWhite = whiteBand + max(c.r, max(c.g, c.b)) * 0.03;
+
+        wBlue = max(wBlue, 0.0);
+        wRed = max(wRed, 0.0);
+        wWhite = max(wWhite, 0.0);
+
+        float sumW = max(wBlue + wRed + wWhite, 0.0001);
+        vec3 mapped = (khBlue * wBlue + khRed * wRed + khWhite * wWhite) / sumW;
+        return clamp(mapped, 0.0, 1.0);
       }
 
       void main(){
@@ -184,6 +215,10 @@ const Prism = ({
           col = clamp(hueRotation(uHueShift) * col, 0.0, 1.0);
         }
 
+        if(uPaletteMode == 1){
+          col = applyCambodiaPalette(col);
+        }
+
         gl_FragColor = vec4(col, o.a);
       }
     `;
@@ -210,6 +245,7 @@ const Prism = ({
         uHueShift: { value: HUE },
         uColorFreq: { value: CFREQ },
         uBloom: { value: BLOOM },
+        uPaletteMode: { value: PALMODE },
         uCenterShift: { value: H * 0.25 },
         uInvBaseHalf: { value: 1 / BASE_HALF },
         uInvHeight: { value: 1 / H },
@@ -415,6 +451,7 @@ const Prism = ({
     height,
     baseWidth,
     animationType,
+    palette,
     glow,
     noise,
     offset?.x,
