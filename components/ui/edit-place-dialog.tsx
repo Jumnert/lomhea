@@ -269,20 +269,18 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
           <Pencil size={15} className="text-zinc-500" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl shadow-3xl">
-        <div className="bg-zinc-900 p-8 text-white relative overflow-hidden text-left">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <DialogTitle className="text-3xl font-black tracking-tighter flex items-center gap-3">
-            <Pencil className="bg-white/10 p-1.5 rounded-xl" size={32} />
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-none">
+        <DialogHeader className="p-4 sm:p-6">
+          <DialogTitle className="text-xl font-bold tracking-tight">
             Edit Location
           </DialogTitle>
-          <DialogDescription className="text-zinc-400 mt-2 font-medium">
+          <DialogDescription>
             Modify the details for this geography.
           </DialogDescription>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="max-h-[80vh]">
-          <div className="p-8 space-y-8">
+        <ScrollArea className="max-h-[85vh]">
+          <div className="p-4 sm:p-6 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -295,12 +293,12 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                      className="pl-9 h-10"
                       required
                     />
                     <AlignLeft
-                      className="absolute left-3.5 top-4 text-zinc-400"
-                      size={16}
+                      className="absolute left-3 top-3 text-muted-foreground"
+                      size={14}
                     />
                   </div>
                 </div>
@@ -314,11 +312,11 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       onChange={(e) =>
                         setFormData({ ...formData, nameKh: e.target.value })
                       }
-                      className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                      className="pl-9 h-10"
                     />
                     <AlignLeft
-                      className="absolute left-3.5 top-4 text-zinc-400"
-                      size={16}
+                      className="absolute left-3 top-3 text-muted-foreground"
+                      size={14}
                     />
                   </div>
                 </div>
@@ -336,9 +334,9 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       setFormData({ ...formData, province: v })
                     }
                   >
-                    <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                    <SelectTrigger className="h-10">
                       <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-zinc-400" />
+                        <MapPin size={14} className="text-muted-foreground" />
                         <SelectValue placeholder="Select province" />
                       </div>
                     </SelectTrigger>
@@ -362,9 +360,9 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       setFormData({ ...formData, category: v })
                     }
                   >
-                    <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                    <SelectTrigger className="h-10">
                       <div className="flex items-center gap-2">
-                        <Tag size={16} className="text-zinc-400" />
+                        <Tag size={14} className="text-muted-foreground" />
                         <SelectValue placeholder="Select category" />
                       </div>
                     </SelectTrigger>
@@ -391,11 +389,11 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                       setFormData({ ...formData, googleMapUrl: e.target.value })
                     }
                     placeholder="Update coordinates from link..."
-                    className="pl-10 pr-24 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    className="pl-9 pr-24 h-10"
                   />
                   <LinkIcon
-                    className="absolute left-3.5 top-4 text-zinc-400"
-                    size={16}
+                    className="absolute left-3 top-3 text-muted-foreground"
+                    size={14}
                   />
                   <button
                     type="button"
@@ -453,7 +451,7 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none h-28"
+                  className="resize-none h-24"
                   required
                 />
               </div>
@@ -509,7 +507,7 @@ export function EditPlaceDialog({ place }: EditPlaceDialogProps) {
 
               <Button
                 type="submit"
-                className="w-full bg-zinc-900 text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-2xl shadow-zinc-200 transition-all active:scale-95"
+                className="w-full h-11 font-bold shadow-md shadow-primary/10 dark:shadow-white/5 active:scale-95 transition-all"
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? (

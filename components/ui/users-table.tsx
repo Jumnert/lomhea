@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
   MoreHorizontal,
@@ -94,163 +95,176 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold tracking-tight">
-            Platform Users
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            Manage registrations and permissions.
-          </p>
-        </div>
-        <Button variant="default" size="sm" onClick={onAddUser}>
-          <Plus className="mr-2 h-4 w-4" /> Add User
-        </Button>
-      </div>
-
-      <div className="rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[280px]">User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">Joined</TableHead>
-              <TableHead className="hidden md:table-cell text-center">
-                Reviews
-              </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold tracking-tight">
+                Platform Users
+              </CardTitle>
+              <p className="text-muted-foreground text-sm font-normal">
+                Manage registrations and permissions.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={onAddUser}>
+              <Plus className="mr-2 h-4 w-4" /> Add User
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No users found.
-                </TableCell>
+                <TableHead className="w-[280px] pl-6">User</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">Joined</TableHead>
+                <TableHead className="hidden md:table-cell text-center">
+                  Reviews
+                </TableHead>
+                <TableHead className="text-right pr-6">Actions</TableHead>
               </TableRow>
-            ) : (
-              users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.image} />
-                        <AvatarFallback>
-                          {user.name?.[0]?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {user.name || "Unnamed"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "ADMIN" ? "default" : "secondary"}
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.banned ? "destructive" : "outline"}>
-                      {user.banned ? "Banned" : "Active"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-center text-xs font-medium">
-                    {user._count?.reviews || 0}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Manage User</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() =>
-                            updateMutation.mutate({
-                              id: user.id,
-                              data: {
-                                role: user.role === "ADMIN" ? "USER" : "ADMIN",
-                              },
-                            })
-                          }
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          {user.role === "ADMIN"
-                            ? "Revoke Admin"
-                            : "Make Admin"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            updateMutation.mutate({
-                              id: user.id,
-                              data: {
-                                role:
-                                  user.role === "MODERATOR"
-                                    ? "USER"
-                                    : "MODERATOR",
-                              },
-                            })
-                          }
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          {user.role === "MODERATOR"
-                            ? "Revoke Moderator"
-                            : "Make Moderator"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className={
-                            user.banned ? "text-primary" : "text-destructive"
-                          }
-                          onClick={() =>
-                            updateMutation.mutate({
-                              id: user.id,
-                              data: { banned: !user.banned },
-                            })
-                          }
-                        >
-                          <Ban className="mr-2 h-4 w-4" />
-                          {user.banned ? "Unban Account" : "Ban Account"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive font-medium"
-                          onClick={() => {
-                            if (confirm("Permanently delete this user?")) {
-                              deleteMutation.mutate(user.id);
-                            }
-                          }}
-                        >
-                          <Trash className="mr-2 h-4 w-4" /> Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    No users found.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="pl-6">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.image} />
+                          <AvatarFallback>
+                            {user.name?.[0]?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {user.name || "Unnamed"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.role === "ADMIN" ? "default" : "secondary"
+                        }
+                      >
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.banned ? "destructive" : "outline"}>
+                        {user.banned ? "Banned" : "Active"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-center text-xs font-medium">
+                      {user._count?.reviews || 0}
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 dark border-none shadow-2xl bg-zinc-950"
+                        >
+                          <DropdownMenuLabel>Manage User</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() =>
+                              updateMutation.mutate({
+                                id: user.id,
+                                data: {
+                                  role:
+                                    user.role === "ADMIN" ? "USER" : "ADMIN",
+                                },
+                              })
+                            }
+                          >
+                            <Shield className="mr-2 h-4 w-4" />
+                            {user.role === "ADMIN"
+                              ? "Revoke Admin"
+                              : "Make Admin"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              updateMutation.mutate({
+                                id: user.id,
+                                data: {
+                                  role:
+                                    user.role === "MODERATOR"
+                                      ? "USER"
+                                      : "MODERATOR",
+                                },
+                              })
+                            }
+                          >
+                            <Shield className="mr-2 h-4 w-4" />
+                            {user.role === "MODERATOR"
+                              ? "Revoke Moderator"
+                              : "Make Moderator"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className={
+                              user.banned ? "text-primary" : "text-destructive"
+                            }
+                            onClick={() =>
+                              updateMutation.mutate({
+                                id: user.id,
+                                data: { banned: !user.banned },
+                              })
+                            }
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            {user.banned ? "Unban Account" : "Ban Account"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive font-medium"
+                            onClick={() => {
+                              if (confirm("Permanently delete this user?")) {
+                                deleteMutation.mutate(user.id);
+                              }
+                            }}
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 });

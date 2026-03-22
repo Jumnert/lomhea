@@ -22,21 +22,7 @@ export default function AdminLayout({
   const handleExport = () => console.log("Exporting...");
 
   return (
-    <div
-      className="dark min-h-screen bg-background text-foreground"
-      style={
-        {
-          "--border": "oklch(0.22 0 0)",
-          "--sidebar-border": "oklch(0.22 0 0)",
-          "--input": "oklch(0.22 0 0)",
-          "--ring": "oklch(0.3 0 0)",
-          "--shadow": "none",
-          "--sidebar-accent": "oklch(1 0 0 / 3%)",
-          "--muted": "oklch(1 0 0 / 2%)",
-          "--accent": "oklch(1 0 0 / 2%)",
-        } as React.CSSProperties
-      }
-    >
+    <div className="dark min-h-screen bg-background text-foreground">
       <SidebarProvider>
         <AdminSidebar />
         <SidebarInset className="bg-background">

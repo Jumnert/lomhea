@@ -214,9 +214,9 @@ export default function AdminRequestsPage() {
                             <Eye size={14} className="mr-2" /> Review
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl p-0">
-                          <DialogHeader className="p-6 border-b bg-muted/30">
-                            <div className="flex items-center gap-2 mb-2">
+                        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-zinc-800/50">
+                          <DialogHeader className="p-4 sm:p-6 border-b">
+                            <div className="flex items-center gap-2 mb-1">
                               <Badge
                                 variant="secondary"
                                 className="text-[10px] font-medium"
@@ -224,16 +224,16 @@ export default function AdminRequestsPage() {
                                 Request ID: {request.id.slice(-6)}
                               </Badge>
                             </div>
-                            <DialogTitle className="text-2xl font-bold tracking-tight">
+                            <DialogTitle className="text-xl font-bold tracking-tight">
                               {request.nameEn}
                             </DialogTitle>
-                            <DialogDescription className="font-medium text-muted-foreground">
+                            <DialogDescription className="text-xs font-medium text-muted-foreground leading-tight">
                               {request.nameKh || "Name in Khmer Missing"}
                             </DialogDescription>
                           </DialogHeader>
 
-                          <ScrollArea className="max-h-[60vh]">
-                            <div className="p-6 space-y-6">
+                          <ScrollArea className="max-h-[70vh]">
+                            <div className="p-4 sm:p-6 space-y-4">
                               {/* Metadata Cards */}
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
@@ -290,7 +290,7 @@ export default function AdminRequestsPage() {
                                     (img: string, i: number) => (
                                       <div
                                         key={i}
-                                        className="relative aspect-video rounded border bg-muted overflow-hidden"
+                                        className="relative aspect-video rounded bg-muted overflow-hidden"
                                       >
                                         <Image
                                           src={img}

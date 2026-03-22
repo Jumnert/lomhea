@@ -129,19 +129,6 @@ export const DashboardHeader = memo(
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden sm:flex"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
-
             <Button variant="outline" size="sm" className="hidden sm:flex">
               <Bell className="h-4 w-4" />
             </Button>

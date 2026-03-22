@@ -330,20 +330,21 @@ export function AddPlaceDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-3xl shadow-3xl">
-        <div className="bg-zinc-900 p-8 text-white relative overflow-hidden text-left">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <DialogTitle className="text-3xl font-black tracking-tighter flex items-center gap-3">
-            <Plus className="bg-white/10 p-1.5 rounded-xl" size={32} />
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none shadow-none">
+        <DialogHeader className="p-4 sm:p-6">
+          <DialogTitle className="text-xl font-bold tracking-tight">
             Add Location
           </DialogTitle>
-          <DialogDescription className="text-zinc-400 mt-2 font-medium">
+          <DialogDescription>
             Publish a new verified geography to the official directory.
           </DialogDescription>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="max-h-[80vh]">
-          <form onSubmit={handleSubmit} className="p-8 space-y-6 text-left">
+        <ScrollArea className="max-h-[85vh]">
+          <form
+            onSubmit={handleSubmit}
+            className="p-4 sm:p-6 space-y-4 text-left"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-zinc-500">
@@ -355,13 +356,13 @@ export function AddPlaceDialog({
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    className="pl-9 h-10"
                     placeholder="e.g. Angkor Wat"
                     required
                   />
                   <AlignLeft
-                    className="absolute left-3.5 top-4 text-zinc-400"
-                    size={16}
+                    className="absolute left-3 top-3 text-muted-foreground"
+                    size={14}
                   />
                 </div>
               </div>
@@ -375,12 +376,12 @@ export function AddPlaceDialog({
                     onChange={(e) =>
                       setFormData({ ...formData, nameKh: e.target.value })
                     }
-                    className="pl-10 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                    className="pl-9 h-10"
                     placeholder="អង្គរវត្ត"
                   />
                   <AlignLeft
-                    className="absolute left-3.5 top-4 text-zinc-400"
-                    size={16}
+                    className="absolute left-3 top-3 text-muted-foreground"
+                    size={14}
                   />
                 </div>
               </div>
@@ -398,9 +399,9 @@ export function AddPlaceDialog({
                     setFormData({ ...formData, province: v })
                   }
                 >
-                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                  <SelectTrigger className="h-10">
                     <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-zinc-400" />
+                      <MapPin size={14} className="text-muted-foreground" />
                       <SelectValue placeholder="Select province" />
                     </div>
                   </SelectTrigger>
@@ -424,9 +425,9 @@ export function AddPlaceDialog({
                     setFormData({ ...formData, category: v })
                   }
                 >
-                  <SelectTrigger className="h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus:ring-1 ring-zinc-200">
+                  <SelectTrigger className="h-10">
                     <div className="flex items-center gap-2">
-                      <Tag size={16} className="text-zinc-400" />
+                      <Tag size={14} className="text-muted-foreground" />
                       <SelectValue placeholder="Select category" />
                     </div>
                   </SelectTrigger>
@@ -453,12 +454,12 @@ export function AddPlaceDialog({
                     setFormData({ ...formData, googleMapUrl: e.target.value })
                   }
                   placeholder="https://google.com/maps/..."
-                  className="pl-10 pr-24 h-12 rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200"
+                  className="pl-9 pr-24 h-10"
                   required
                 />
                 <LinkIcon
-                  className="absolute left-3.5 top-4 text-zinc-400"
-                  size={16}
+                  className="absolute left-3 top-3 text-muted-foreground"
+                  size={14}
                 />
                 <button
                   type="button"
@@ -474,9 +475,9 @@ export function AddPlaceDialog({
                       toast.error("Clipboard permission denied");
                     }
                   }}
-                  className="absolute right-2 top-2 h-8 px-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all active:scale-95 shadow-sm"
+                  className="absolute right-1 top-1 h-8 px-2.5 rounded-md bg-secondary text-[10px] font-bold flex items-center gap-1.5 hover:bg-secondary/80 transition-all active:scale-95"
                 >
-                  <ClipboardPaste size={12} className="text-zinc-500" />
+                  <ClipboardPaste size={12} />
                   Paste
                 </button>
               </div>
@@ -516,7 +517,7 @@ export function AddPlaceDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="rounded-2xl bg-zinc-50 border-zinc-100 shadow-none focus-visible:ring-1 ring-zinc-200 resize-none h-28"
+                className="resize-none h-24"
                 placeholder="Tell us what makes this place special..."
                 required
               />
@@ -574,10 +575,10 @@ export function AddPlaceDialog({
               />
             </div>
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-2">
               <Button
                 type="submit"
-                className="w-full bg-zinc-900 text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-2xl shadow-zinc-200 transition-all active:scale-95"
+                className="w-full h-11 font-bold shadow-md shadow-primary/10 dark:shadow-white/5 active:scale-95 transition-all"
                 disabled={createMutation.isPending || isUploading}
               >
                 {createMutation.isPending ? (
@@ -586,10 +587,7 @@ export function AddPlaceDialog({
                     Publishing...
                   </>
                 ) : (
-                  <>
-                    <Send className="mr-2 h-5 w-5" />
-                    Publish to Directory
-                  </>
+                  <>Comfirm Request</>
                 )}
               </Button>
             </DialogFooter>

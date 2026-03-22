@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  Plus,
   Trash2,
   Loader2,
   MapPin,
@@ -119,7 +120,13 @@ export default function AdminPlacesPage() {
             Verify and monitor geographic data.
           </p>
         </div>
-        <AddPlaceDialog />
+        <AddPlaceDialog
+          trigger={
+            <Button variant="outline" size="sm">
+              <Plus className="mr-2 h-4 w-4" /> Add New Place
+            </Button>
+          }
+        />
       </div>
 
       <Card>
@@ -145,7 +152,7 @@ export default function AdminPlacesPage() {
                 <TableRow key={place.id}>
                   <TableCell className="pl-6 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="relative h-10 w-16 rounded border bg-muted overflow-hidden shrink-0">
+                      <div className="relative h-10 w-16 rounded bg-muted overflow-hidden shrink-0">
                         {place.images?.[0] ? (
                           <Image
                             src={place.images[0]}
