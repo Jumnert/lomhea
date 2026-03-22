@@ -34,14 +34,12 @@ export async function processQueue(
   }
 
   // Read pending messages
-  // @ts-ignore - Upstash Redis xreadgroup types can be tricky
   const messages = await redis.xreadgroup(
-    "GROUP",
     groupName,
     consumerName,
     [streamKey],
     [">"],
-    { count: 1, block: 1000 },
+    { count: 1, blockMS: 1000 },
   );
 
   if (messages && (messages as any).length > 0) {
