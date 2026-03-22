@@ -80,7 +80,7 @@ export function VerifyOtpDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[400px] border-none bg-zinc-950 dark text-white p-6 shadow-2xl">
+      <DialogContent className="sm:max-w-[400px] p-6 shadow-2xl">
         <DialogHeader className="items-center text-center">
           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <ShieldCheck className="h-6 w-6 text-primary" />
@@ -101,7 +101,7 @@ export function VerifyOtpDialog({
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             placeholder="0000"
-            className="text-center text-3xl font-bold tracking-[1em] h-16 w-full bg-zinc-900 border-zinc-800 placeholder:text-zinc-800 focus-visible:ring-primary h-20"
+            className="text-center text-3xl font-bold tracking-[1em] w-full focus-visible:ring-primary h-20"
             disabled={isLoading}
           />
           <Button
@@ -125,7 +125,6 @@ export function VerifyOtpDialog({
             variant="ghost"
             onClick={onClose}
             disabled={isLoading}
-            className="text-zinc-400 hover:text-white hover:bg-zinc-900 border-none"
           >
             Cancel
           </Button>

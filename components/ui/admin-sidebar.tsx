@@ -1,7 +1,6 @@
 "use client";
 
 import { memo } from "react";
-import { useTheme } from "next-themes";
 import Link from "next/link";
 import {
   Sidebar,
@@ -27,8 +26,6 @@ import {
   Zap,
   Bell,
   Settings,
-  Moon,
-  Sun,
   User,
   MapPin,
   Inbox,
@@ -52,10 +49,8 @@ const menuItems = [
 ];
 
 export const AdminSidebar = memo(() => {
-  const { theme, setTheme } = useTheme();
-
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="bg-white dark:bg-sidebar">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

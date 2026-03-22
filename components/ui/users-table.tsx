@@ -227,7 +227,7 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="w-48 dark border-none shadow-2xl bg-zinc-950"
+                            className="w-48 border shadow-2xl bg-popover text-popover-foreground"
                           >
                             <DropdownMenuLabel>Manage User</DropdownMenuLabel>
                             <DropdownMenuSeparator />
@@ -321,7 +321,7 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
       />
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent className="dark bg-zinc-950 border-none text-white max-w-[400px]">
+        <AlertDialogContent className="max-w-[400px]">
           <AlertDialogHeader>
             <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
               <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -329,14 +329,14 @@ export const UsersTable = memo(({ onAddUser }: UsersTableProps) => {
             <AlertDialogTitle className="text-xl font-bold">
               Absolute Confirmation
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
+            <AlertDialogDescription>
               You are about to <strong>{pendingAction?.label}</strong> for this
               account. This is a sensitive operation. Are you 100% sure you want
               to proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="bg-transparent border-none text-zinc-400 hover:text-white hover:bg-zinc-900 shadow-none">
+            <AlertDialogCancel>
               Abort Action
             </AlertDialogCancel>
             <AlertDialogAction

@@ -24,22 +24,28 @@ export async function POST(
       return NextResponse.json({ error: "Invalid rating" }, { status: 400 });
     }
 
-    // 1. Create or update the review
-    const review = await (prisma as any).review.upsert({
+    // 1. Create or update the review (compatible even without composite unique index)
+    const existingReview = await (prisma as any).review.findFirst({
       where: {
-        userId_placeId: {
-          userId: session.user.id,
-          placeId: placeId,
-        },
-      },
-      update: { rating, comment },
-      create: {
-        rating,
-        comment,
         userId: session.user.id,
         placeId,
       },
+      select: { id: true },
     });
+
+    const review = existingReview
+      ? await (prisma as any).review.update({
+          where: { id: existingReview.id },
+          data: { rating, comment },
+        })
+      : await (prisma as any).review.create({
+          data: {
+            rating,
+            comment,
+            userId: session.user.id,
+            placeId,
+          },
+        });
 
     // 2. Perform aggregation directly in the DB (much faster)
     const stats = await (prisma as any).review.aggregate({

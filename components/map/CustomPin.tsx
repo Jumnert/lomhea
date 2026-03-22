@@ -9,16 +9,23 @@ import {
   ShoppingBag,
   Landmark,
   MapPin,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CustomPinProps {
   category: Category;
+  isFeatured?: boolean;
   isSelected?: boolean;
   onClick: () => void;
 }
 
-export function CustomPin({ category, isSelected, onClick }: CustomPinProps) {
+export function CustomPin({
+  category,
+  isFeatured,
+  isSelected,
+  onClick,
+}: CustomPinProps) {
   const getIcon = () => {
     switch (category) {
       case "Temple":
@@ -71,11 +78,20 @@ export function CustomPin({ category, isSelected, onClick }: CustomPinProps) {
         className={cn(
           "p-2 rounded-full shadow-lg border-2 border-white transition-all transform",
           getColors(),
-          isSelected ? "ring-4 ring-primary/30" : "",
+          isSelected
+            ? "ring-4 ring-primary/30"
+            : isFeatured
+              ? "ring-2 ring-amber-300/70"
+              : "",
         )}
       >
         <Icon size={18} />
       </div>
+      {isFeatured && (
+        <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center border border-white shadow">
+          <Star size={10} className="fill-current" />
+        </div>
+      )}
       {/* Little tail for the pin */}
       <div
         className={cn(

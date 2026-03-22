@@ -20,6 +20,9 @@ import {
   MapPin,
   ShieldCheck,
   ShieldAlert,
+  Sparkles,
+  StarOff,
+  AlertTriangle,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -35,21 +38,30 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { useState } from "react";
 
 import { useSession } from "@/lib/auth-client";
+import { VerifyOtpDialog } from "@/components/ui/verify-otp-dialog";
 
 export default function AdminPlacesPage() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingHighlight, setPendingHighlight] = useState<{
+    id: string;
+    name: string;
+    isFeatured: boolean;
+  } | null>(null);
 
   const { data: places = [], isLoading } = useQuery<any[]>({
     queryKey: ["admin-places"],
     queryFn: async () => {
-      const res = await fetch("/api/places");
+      const res = await fetch("/api/admin/places");
       if (!res.ok) throw new Error("Failed to fetch places");
       return res.json();
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
   const verifyMutation = useMutation({
@@ -71,6 +83,59 @@ export default function AdminPlacesPage() {
       toast.success("Place status updated");
       queryClient.invalidateQueries({ queryKey: ["admin-places"] });
       queryClient.invalidateQueries({ queryKey: ["places"] });
+    },
+  });
+
+  const requestHighlightAction = (place: any) => {
+    const role = (session?.user as any)?.role;
+    if (role !== "ADMIN") {
+      toast.error("Only ADMIN can highlight/unhighlight places.");
+      return;
+    }
+
+    setPendingHighlight({
+      id: place.id,
+      name: place.name,
+      isFeatured: Boolean(place.isFeatured),
+    });
+    setIsVerifyOpen(true);
+  };
+
+  const highlightMutation = useMutation({
+    mutationFn: async ({
+      id,
+      highlight,
+    }: {
+      id: string;
+      highlight: boolean;
+    }) => {
+      const role = (session?.user as any)?.role;
+      if (role !== "ADMIN") {
+        throw new Error(
+          "Only ADMIN can highlight/unhighlight places without payment.",
+        );
+      }
+
+      const res = await fetch(`/api/admin/places/${id}/highlight`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ highlight, durationDays: 30 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update highlight.");
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.highlight
+          ? "Place highlighted by admin."
+          : "Place unhighlighted by admin.",
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-places"] });
+      queryClient.invalidateQueries({ queryKey: ["places"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     },
   });
 
@@ -144,6 +209,7 @@ export default function AdminPlacesPage() {
                 <TableHead>Category</TableHead>
                 <TableHead>Province</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Highlight</TableHead>
                 <TableHead className="text-right pr-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -205,6 +271,33 @@ export default function AdminPlacesPage() {
                       </Badge>
                     </Button>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={place.isFeatured ? "default" : "outline"}
+                        className={
+                          place.isFeatured
+                            ? "bg-amber-500 hover:bg-amber-500 text-zinc-950"
+                            : ""
+                        }
+                      >
+                        {place.isFeatured ? (
+                          <Sparkles size={12} className="mr-1" />
+                        ) : (
+                          <StarOff size={12} className="mr-1" />
+                        )}
+                        {place.isFeatured ? "Highlighted" : "Normal"}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => requestHighlightAction(place)}
+                        disabled={highlightMutation.isPending}
+                      >
+                        {place.isFeatured ? "Unhighlight" : "Highlight"}
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex items-center justify-end gap-2">
                       <EditPlaceDialog place={place} />
@@ -250,6 +343,62 @@ export default function AdminPlacesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <VerifyOtpDialog
+        isOpen={isVerifyOpen}
+        onClose={() => {
+          setIsVerifyOpen(false);
+          setPendingHighlight(null);
+        }}
+        onVerified={() => {
+          setIsVerifyOpen(false);
+          setIsConfirmOpen(true);
+        }}
+      />
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="max-w-[420px]">
+          <AlertDialogHeader>
+            <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-xl font-bold">
+              Absolute Confirmation
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingHighlight?.isFeatured
+                ? `You are about to unhighlight "${pendingHighlight?.name}". Are you sure?`
+                : `You are about to highlight "${pendingHighlight?.name}" for 30 days without payment. Are you sure?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel
+              onClick={() => {
+                setPendingHighlight(null);
+              }}
+            >
+              Abort Action
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className={
+                pendingHighlight?.isFeatured
+                  ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                  : "bg-amber-500 text-zinc-950 hover:bg-amber-400"
+              }
+              onClick={() => {
+                if (!pendingHighlight) return;
+                highlightMutation.mutate({
+                  id: pendingHighlight.id,
+                  highlight: !pendingHighlight.isFeatured,
+                });
+                setPendingHighlight(null);
+              }}
+            >
+              Yes, Execute
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

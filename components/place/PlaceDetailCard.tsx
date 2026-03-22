@@ -15,6 +15,7 @@ import {
   Info,
   Flag,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShareDialog } from "@/components/modals/ShareDialog";
+import { BakongPaymentDialog } from "@/components/modals/BakongPaymentDialog";
 import { useWebHaptics } from "web-haptics/react";
 
 // Inner component that safely uses hooks and receives expanded state
@@ -92,6 +94,7 @@ function CardInner({
   const [isContentReady, setIsContentReady] = useState(false);
   const [showLoginAlert, setShowLoginAlert] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isPromoteOpen, setIsPromoteOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [windowSize, setWindowSize] = useState({
@@ -190,7 +193,9 @@ function CardInner({
   const { data: place } = useQuery<Place>({
     queryKey: ["place", selectedPlaceId],
     queryFn: async () => {
-      const res = await fetch(`/api/places/${selectedPlaceId}`);
+      const res = await fetch(`/api/places/${selectedPlaceId}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -292,8 +297,9 @@ function CardInner({
 
       // Immediately replace the optimistic review with the real one to prevent flicker
       queryClient.setQueryData(["place", selectedPlaceId], (old: any) => {
-        if (!old) return old;
-        const oldReviews = old.reviews || [];
+        const base = old || place;
+        if (!base) return old;
+        const oldReviews = base.reviews || [];
         const updatedReviews = oldReviews.map((r: any) =>
           r.id === "temp-review-id"
             ? { ...realReview, user: session?.user }
@@ -303,7 +309,7 @@ function CardInner({
         // If for some reason it wasn't found (e.g. race condition), just prepend it
         if (!updatedReviews.find((r: any) => r.id === realReview.id)) {
           return {
-            ...old,
+            ...base,
             reviews: [
               { ...realReview, user: session?.user },
               ...oldReviews.filter((r: any) => r.id !== "temp-review-id"),
@@ -311,7 +317,7 @@ function CardInner({
           };
         }
 
-        return { ...old, reviews: updatedReviews };
+        return { ...base, reviews: updatedReviews };
       });
     },
     onSettled: () => {
@@ -372,10 +378,6 @@ function CardInner({
           return base;
         });
       }
-
-      toast.success(
-        data.favorited ? "Added to favorites! ❤️" : "Removed from favorites",
-      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
@@ -432,6 +434,11 @@ function CardInner({
                         >
                           {place.category}
                         </Badge>
+                        {place.isFeatured && (
+                          <Badge className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-px rounded-md bg-amber-100 text-amber-700 border-0">
+                            Featured
+                          </Badge>
+                        )}
                         <span className="flex items-center gap-0.5 text-amber-500 text-[11px] font-bold ml-auto pr-6">
                           <Star size={10} className="fill-current" />
                           {place.rating.toFixed(1)}
@@ -608,9 +615,16 @@ function CardInner({
                 <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
                   <div className="flex items-end justify-between">
                     <div>
-                      <Badge className="mb-1.5 bg-white/15 backdrop-blur-sm border-white/20 text-white text-[9px] font-bold uppercase tracking-wider">
-                        {place?.category}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Badge className="bg-white/15 backdrop-blur-sm border-white/20 text-white text-[9px] font-bold uppercase tracking-wider">
+                          {place?.category}
+                        </Badge>
+                        {place?.isFeatured && (
+                          <Badge className="bg-amber-400/85 text-amber-950 border-amber-200 text-[9px] font-bold uppercase tracking-wider">
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
                       <h2 className="text-xl font-bold text-white leading-tight drop-shadow">
                         {place?.name}
                       </h2>
@@ -982,97 +996,120 @@ function CardInner({
                             </a>
                           </Button>
                         </div>
-                        <Dialog
-                          open={isReviewOpen}
-                          onOpenChange={setIsReviewOpen}
-                        >
-                          <DialogTrigger asChild>
+                        <div className="flex items-center gap-2">
+                          {!place?.isFeatured && (
                             <Button
                               size="sm"
-                              className="h-8 px-4 text-xs font-semibold rounded-full bg-zinc-900 text-white hover:bg-black transition-all"
+                              className="h-8 px-4 text-xs font-semibold rounded-full bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (!session) {
                                   triggerLoginAlert();
                                   return;
                                 }
+                                setIsPromoteOpen(true);
                               }}
                             >
-                              Write a Review
+                              <Sparkles size={13} className="mr-1.5" />
+                              Promote This Place
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="rounded-3xl max-w-[400px]">
-                            <DialogHeader>
-                              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                                <Star
-                                  className="text-amber-500 fill-amber-500"
-                                  size={20}
-                                />
-                                Rate Experience
-                              </DialogTitle>
-                              <DialogDescription className="font-medium text-zinc-500">
-                                Share your thoughts with the community.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-6 py-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                  <button
-                                    key={s}
-                                    onClick={() =>
+                          )}
+
+                          <Dialog
+                            open={isReviewOpen}
+                            onOpenChange={setIsReviewOpen}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                className="h-8 px-4 text-xs font-semibold rounded-full bg-zinc-900 text-white hover:bg-black transition-all"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!session) {
+                                    triggerLoginAlert();
+                                    return;
+                                  }
+                                }}
+                              >
+                                Write a Review
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="rounded-3xl max-w-[400px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+                              <DialogHeader>
+                                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                  <Star
+                                    className="text-amber-500 fill-amber-500"
+                                    size={20}
+                                  />
+                                  Rate Experience
+                                </DialogTitle>
+                                <DialogDescription className="font-medium text-zinc-500">
+                                  Share your thoughts with the community.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-6 py-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <button
+                                      key={s}
+                                      onClick={() =>
+                                        setReviewData({
+                                          ...reviewData,
+                                          rating: s,
+                                        })
+                                      }
+                                      className="transition-transform active:scale-90 hover:scale-110"
+                                    >
+                                      <Star
+                                        size={32}
+                                        className={cn(
+                                          "transition-colors",
+                                          s <= reviewData.rating
+                                            ? "fill-amber-400 text-amber-400"
+                                            : "text-zinc-200",
+                                        )}
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="space-y-2 text-left">
+                                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                    Share your story
+                                  </Label>
+                                  <Textarea
+                                    placeholder="What did you love about this place?"
+                                    className="rounded-2xl resize-none h-32 bg-zinc-50 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-700"
+                                    value={reviewData.comment}
+                                    onChange={(e) =>
                                       setReviewData({
                                         ...reviewData,
-                                        rating: s,
+                                        comment: e.target.value,
                                       })
                                     }
-                                    className="transition-transform active:scale-90 hover:scale-110"
-                                  >
-                                    <Star
-                                      size={32}
-                                      className={cn(
-                                        "transition-colors",
-                                        s <= reviewData.rating
-                                          ? "fill-amber-400 text-amber-400"
-                                          : "text-zinc-200",
-                                      )}
-                                    />
-                                  </button>
-                                ))}
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2 text-left">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                  Share your story
-                                </Label>
-                                <Textarea
-                                  placeholder="What did you love about this place?"
-                                  className="rounded-2xl resize-none h-32 bg-zinc-50 border-zinc-100"
-                                  value={reviewData.comment}
-                                  onChange={(e) =>
-                                    setReviewData({
-                                      ...reviewData,
-                                      comment: e.target.value,
-                                    })
+                              <DialogFooter>
+                                <Button
+                                  className="w-full bg-zinc-900 text-white rounded-2xl h-12 font-black uppercase tracking-widest shadow-none"
+                                  onClick={() =>
+                                    reviewMutation.mutate(reviewData)
                                   }
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button
-                                className="w-full bg-zinc-900 text-white rounded-2xl h-12 font-black uppercase tracking-widest shadow-xl shadow-zinc-100"
-                                onClick={() =>
-                                  reviewMutation.mutate(reviewData)
-                                }
-                                disabled={reviewMutation.isPending}
-                              >
-                                {reviewMutation.isPending ? (
-                                  <Loader2 className="animate-spin" size={16} />
-                                ) : (
-                                  "Publish Review"
-                                )}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                                  disabled={reviewMutation.isPending}
+                                >
+                                  {reviewMutation.isPending ? (
+                                    <Loader2
+                                      className="animate-spin"
+                                      size={16}
+                                    />
+                                  ) : (
+                                    "Publish Review"
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </div>
                     </ExpandableCardFooter>
                   </motion.div>
@@ -1115,12 +1152,20 @@ function CardInner({
       </AlertDialog>
 
       {place && (
-        <ShareDialog
-          placeName={place.name}
-          placeId={place.id}
-          open={isShareOpen}
-          onOpenChange={setIsShareOpen}
-        />
+        <>
+          <ShareDialog
+            placeName={place.name}
+            placeId={place.id}
+            open={isShareOpen}
+            onOpenChange={setIsShareOpen}
+          />
+          <BakongPaymentDialog
+            placeId={place.id}
+            placeName={place.name}
+            isOpen={isPromoteOpen}
+            onClose={() => setIsPromoteOpen(false)}
+          />
+        </>
       )}
     </>
   );

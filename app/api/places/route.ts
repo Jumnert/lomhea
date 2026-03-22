@@ -16,24 +16,55 @@ export async function GET(request: Request) {
     const places = await getOrSetCache(
       cacheKey,
       async () => {
-        // Optimization: Only select what's needed for the map pins/cards
-        return await prisma.place.findMany({
-          where: category && category !== "All" ? { category } : {},
-          select: {
-            id: true,
-            name: true,
-            nameKh: true,
-            lat: true,
-            lng: true,
-            category: true,
-            province: true,
-            images: true,
-            rating: true,
-            reviewCount: true,
-            isVerified: true,
-          },
-          orderBy: { createdAt: "desc" },
-        });
+        const where = category && category !== "All" ? { category } : {};
+
+        try {
+          // New schema path
+          return await (prisma.place as any).findMany({
+            where,
+            select: {
+              id: true,
+              name: true,
+              nameKh: true,
+              lat: true,
+              lng: true,
+              category: true,
+              province: true,
+              images: true,
+              rating: true,
+              reviewCount: true,
+              isVerified: true,
+              isFeatured: true,
+              featuredUntil: true,
+            },
+            orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+          });
+        } catch (error) {
+          // Backward compatibility for DBs that haven't run the new migration yet
+          const legacy = await prisma.place.findMany({
+            where,
+            select: {
+              id: true,
+              name: true,
+              nameKh: true,
+              lat: true,
+              lng: true,
+              category: true,
+              province: true,
+              images: true,
+              rating: true,
+              reviewCount: true,
+              isVerified: true,
+            },
+            orderBy: { createdAt: "desc" },
+          });
+
+          return legacy.map((p) => ({
+            ...p,
+            isFeatured: false,
+            featuredUntil: null,
+          }));
+        }
       },
       600,
     ); // Cache for 10 minutes

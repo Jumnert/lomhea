@@ -51,7 +51,7 @@ export const DashboardHeader = memo(
     const { theme, setTheme } = useTheme();
 
     return (
-      <header className="bg-background/95 sticky top-0 z-50 flex h-16 w-full shrink-0 items-center gap-2 backdrop-blur transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+      <header className="bg-white/95 dark:bg-background/95 sticky top-0 z-50 flex h-16 w-full shrink-0 items-center gap-2 backdrop-blur transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-zinc-100 dark:border-zinc-800">
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
@@ -131,6 +131,20 @@ export const DashboardHeader = memo(
 
             <Button variant="outline" size="sm" className="hidden sm:flex">
               <Bell className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+              title="Toggle theme"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </Button>
 
             <LanguageSwitcher />

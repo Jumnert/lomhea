@@ -51,6 +51,8 @@ export interface Place {
   images: string[];
   rating: number;
   reviewCount: number;
+  isFeatured: boolean;
+  featuredUntil: string | null;
   accommodations?: Accommodation[];
   foods?: Food[];
   reviews?: Review[];

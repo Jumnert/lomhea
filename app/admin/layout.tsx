@@ -22,10 +22,10 @@ export default function AdminLayout({
   const handleExport = () => console.log("Exporting...");
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-white text-foreground dark:bg-background">
       <SidebarProvider>
         <AdminSidebar />
-        <SidebarInset className="bg-background">
+        <SidebarInset className="bg-white dark:bg-background">
           <DashboardHeader
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}

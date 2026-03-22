@@ -73,14 +73,20 @@ export function MapContainer() {
     trigger(20);
     setSelectedPlaceId(place.id);
     setPanelOpen(true);
+  };
 
-    mapRef.current?.flyTo({
-      center: [place.lng, place.lat],
+  React.useEffect(() => {
+    if (!selectedPlaceId || !places?.length) return;
+    const target = places.find((p) => p.id === selectedPlaceId);
+    if (!target || !mapRef.current) return;
+
+    mapRef.current.flyTo({
+      center: [target.lng, target.lat],
       zoom: 14,
-      duration: 2000,
+      duration: 1400,
       essential: true,
     });
-  };
+  }, [selectedPlaceId, places]);
 
   const filteredPlaces = React.useMemo(() => {
     if (!places) return [];
@@ -177,6 +183,7 @@ export function MapContainer() {
           >
             <CustomPin
               category={place.category}
+              isFeatured={place.isFeatured}
               isSelected={selectedPlaceId === place.id}
               onClick={() => onMarkerClick(place)}
             />

@@ -78,6 +78,8 @@ model Place {
   images         String[]
   rating         Float           @default(0)
   reviewCount    Int             @default(0)
+  isFeatured     Boolean         @default(false)
+  featuredUntil  DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   accommodations Accommodation[]

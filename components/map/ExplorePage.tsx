@@ -4,6 +4,7 @@ import { MapContainer } from "@/components/map/MapContainer";
 import { FilterBar } from "@/components/map/FilterBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { PlaceDetailCard } from "@/components/place/PlaceDetailCard";
+import { FeaturedSidebar } from "@/components/map/FeaturedSidebar";
 
 export function ExplorePage() {
   return (
@@ -14,6 +15,7 @@ export function ExplorePage() {
       {/* Main Map View */}
       <main className="w-full h-full relative z-0">
         <MapContainer />
+        <FeaturedSidebar />
       </main>
 
       {/* Floating Filters - right below navbar */}
