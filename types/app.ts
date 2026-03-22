@@ -53,6 +53,7 @@ export interface Place {
   reviewCount: number;
   isFeatured: boolean;
   featuredUntil: string | null;
+  updatedAt?: string;
   accommodations?: Accommodation[];
   foods?: Food[];
   reviews?: Review[];

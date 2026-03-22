@@ -23,6 +23,8 @@ import { pusherClient } from "@/lib/pusher-client";
 export function MapContainer() {
   const {
     category,
+    province,
+    minRating,
     viewState,
     setViewState,
     selectedPlaceId,
@@ -63,8 +65,9 @@ export function MapContainer() {
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 60, // 1 hour
+    refetchOnWindowFocus: false,
   });
 
   const mapRef = React.useRef<MapRef>(null);
@@ -98,6 +101,16 @@ export function MapContainer() {
       result = result.filter((p) => p.category === category);
     }
 
+    // Filter by province
+    if (province !== "All") {
+      result = result.filter((p) => p.province === province);
+    }
+
+    // Filter by minimum rating
+    if (minRating > 0) {
+      result = result.filter((p) => (p.rating || 0) >= minRating);
+    }
+
     // Filter by search query locally
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -121,7 +134,7 @@ export function MapContainer() {
     });
 
     return result;
-  }, [places, category, searchQuery]);
+  }, [places, category, province, minRating, searchQuery]);
 
   if (isLoading) {
     return (
@@ -154,6 +167,7 @@ export function MapContainer() {
         reuseMaps
         boxZoom={false}
         antialias={true}
+        localIdeographFontFamily="'Kantumruy Pro','Noto Sans Khmer','Arial Unicode MS',sans-serif"
         {...({
           dragPan: {
             inertia: 300,

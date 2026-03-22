@@ -1,361 +1,193 @@
 import { PrismaClient } from "@prisma/client";
+import seedPlaces from "./places.seed.json";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log("Seeding data...");
+type InputPlace = {
+  place_name_en: string;
+  place_name_kh?: string;
+  province: string;
+  category: string;
+  google_maps_link?: string;
+  description?: string;
+  gallery?: string[];
+};
 
-  // Core Categories: Temple, Beach, Waterfall, Nature, Museum, Market
+const REQUIRED_PLACE_COUNT = 100;
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb";
 
-  const places = [
-    // 5 Temples
-    {
-      name: "Angkor Wat",
-      nameKh: "អង្គរវត្ត",
-      description:
-        "Angkor Wat is a temple complex in Cambodia and the largest religious monument in the world by land area, on a site measuring 162.6 hectares.",
-      lat: 13.4125,
-      lng: 103.867,
-      category: "Temple",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1591147132145-c6466f81a79f?q=80&w=1000",
-        "https://images.unsplash.com/photo-1544256718-3bcf237f3974?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Bayon Temple",
-      nameKh: "ប្រាសាទបាយ័ន",
-      description:
-        "The Bayon is a richly decorated Khmer temple at Angkor in Cambodia. Built in the late 12th or early 13th century as the state temple of the Mahayana Buddhist King Jayavarman VII.",
-      lat: 13.4412,
-      lng: 103.8588,
-      category: "Temple",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Ta Prohm",
-      nameKh: "ប្រាសាទតាព្រហ្ម",
-      description:
-        "Ta Prohm is the modern name of the temple at Angkor, Siem Reap, Cambodia, built in the Bayon style largely in the late 12th and early 13th centuries.",
-      lat: 13.4348,
-      lng: 103.8893,
-      category: "Temple",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1563911892437-1feda1073b64?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Preah Vihear Temple",
-      nameKh: "ប្រាសាទព្រះវិហារ",
-      description:
-        "Prasat Preah Vihear is an ancient Hindu temple built during the period of the Khmer Empire, that is situated atop a 525-metre cliff in the Dângrêk Mountains.",
-      lat: 14.3908,
-      lng: 104.6801,
-      category: "Temple",
-      province: "Preah Vihear",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1628102430030-cf2f20667dd5?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Koh Ker",
-      nameKh: "កោះកេរ្ដិ៍",
-      description:
-        "Koh Ker is a remote archaeological site in northern Cambodia about 120 kilometres away from Siem Reap and the ancient site of Angkor.",
-      lat: 13.7844,
-      lng: 104.5401,
-      category: "Temple",
-      province: "Preah Vihear",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1606214174585-fe31582dc6ee?q=80&w=1000",
-      ],
-    },
+function normalizeCategory(raw: string) {
+  const value = (raw || "").toLowerCase();
+  if (value.includes("temple") || value.includes("unesco")) return "Temple";
+  if (value.includes("beach") || value.includes("island")) return "Beach";
+  if (value.includes("waterfall")) return "Waterfall";
+  if (
+    value.includes("market") ||
+    value.includes("food") ||
+    value.includes("recreation")
+  )
+    return "Market";
+  if (
+    value.includes("cultural") ||
+    value.includes("museum") ||
+    value.includes("historical landmark")
+  )
+    return "Museum";
+  return "Nature";
+}
 
-    // 4 Beaches
-    {
-      name: "Koh Rong",
-      nameKh: "កោះរ៉ុង",
-      description:
-        "Koh Rong is the second largest island of Cambodia. The word Rong might refer to an old term for cave or tunnel.",
-      lat: 10.7,
-      lng: 103.2333,
-      category: "Beach",
-      province: "Sihanoukville",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Otres Beach",
-      nameKh: "ឆ្នេរអូត្រេស",
-      description:
-        "Otres Beach is a quieter alternative to the more central beaches in Sihanoukville, known for its pristine white sand and clear water.",
-      lat: 10.5583,
-      lng: 103.5417,
-      category: "Beach",
-      province: "Sihanoukville",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Koh Rong Sanloem",
-      nameKh: "កោះរ៉ុងសន្លឹម",
-      description:
-        "Koh Rong Sanloem is an island off the coast of Sihanoukville, Cambodia. It is the smaller sister island to Koh Rong.",
-      lat: 10.5833,
-      lng: 103.3,
-      category: "Beach",
-      province: "Sihanoukville",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Long Set Beach",
-      nameKh: "ឆ្នេរឡុងសិត",
-      description:
-        "Also known as 4K Beach, this is one of the most beautiful and serene beaches on Koh Rong.",
-      lat: 10.675,
-      lng: 103.285,
-      category: "Beach",
-      province: "Sihanoukville",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1506929113675-b9299d39bb14?q=80&w=1000",
-      ],
-    },
+const imageValidationCache = new Map<string, boolean>();
 
-    // 3 Waterfalls
-    {
-      name: "Phnom Kulen Waterfall",
-      nameKh: "ទឹកធ្លាក់ភ្នំគូលែន",
-      description:
-        "Located within the Phnom Kulen National Park, this waterfall is a popular spot for locals and tourists alike.",
-      lat: 13.5647,
-      lng: 104.1086,
-      category: "Waterfall",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Kbal Chhay Waterfall",
-      nameKh: "ទឹកធ្លាក់ក្បាលឆាយ",
-      description:
-        "The Kbal Chhay Waterfalls are located on the Prek Tuk Sap River about 7 km from Sihanoukville.",
-      lat: 10.6722,
-      lng: 103.6067,
-      category: "Waterfall",
-      province: "Sihanoukville",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Bousra Waterfall",
-      nameKh: "ទឹកធ្លាក់ប៊ូស្រា",
-      description:
-        "Bousra Waterfall is located in the Pich Chreada District of Mondulkiri Province, and is one of the most famous waterfalls in Cambodia.",
-      lat: 12.3583,
-      lng: 107.4167,
-      category: "Waterfall",
-      province: "Mondulkiri",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1433086966358-54859d0ee716?q=80&w=1000",
-      ],
-    },
+function withUnsplashParams(url: string) {
+  if (!url.includes("images.unsplash.com")) return url;
+  const hasQuery = url.includes("?");
+  const suffix = "auto=format&fit=crop&w=1400&q=80";
+  return hasQuery ? `${url}&${suffix}` : `${url}?${suffix}`;
+}
 
-    // 3 Nature
-    {
-      name: "Tonle Sap Lake",
-      nameKh: "បឹងទន្លេសាប",
-      description:
-        "The Tonlé Sap is a combined lake and river system of huge importance to Cambodia, and is the largest freshwater lake in Southeast Asia.",
-      lat: 13.1333,
-      lng: 104.0,
-      category: "Nature",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1540959733332-e94e270b4052?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Cardamom Mountains",
-      nameKh: "ជួរភ្នំក្រវាញ",
-      description:
-        "The Cardamom Mountains is a mountain range in southwestern Cambodia and eastern Thailand.",
-      lat: 12.0,
-      lng: 103.25,
-      category: "Nature",
-      province: "Koh Kong",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Prek Toal Sanctuary",
-      nameKh: "តំបន់អភិរក្សព្រែកទាល់",
-      description:
-        "Prek Toal Bird Sanctuary is one of the most important breeding grounds in Southeast Asia for endangered waterbirds.",
-      lat: 13.15,
-      lng: 103.65,
-      category: "Nature",
-      province: "Battambang",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=1000",
-      ],
-    },
+async function isImageReachable(url: string) {
+  const cached = imageValidationCache.get(url);
+  if (typeof cached === "boolean") return cached;
 
-    // 3 Museums
-    {
-      name: "National Museum of Cambodia",
-      nameKh: "សារមន្ទីរជាតិ",
-      description:
-        "The National Museum of Cambodia in Phnom Penh is Cambodia's largest museum of cultural history and is the country's leading historical and archaeological museum.",
-      lat: 11.5658,
-      lng: 104.9292,
-      category: "Museum",
-      province: "Phnom Penh",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1518112166137-85691456ed35?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Tuol Sleng Genocide Museum",
-      nameKh: "សារមន្ទីរឧក្រិដ្ឋកម្មប្រល័យពូជសាសន៍ទួលស្លែង",
-      description:
-        "A museum in Phnom Penh, the capital of Cambodia, chronicling the Cambodian genocide.",
-      lat: 11.5494,
-      lng: 104.9175,
-      category: "Museum",
-      province: "Phnom Penh",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1588668214407-6ea9a6d7c26e?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Angkor National Museum",
-      nameKh: "សារមន្ទីរជាតិអង្គរ",
-      description:
-        "An archaeological museum dedicated to the collection, preservation and presentation of Angkorian artifacts, also provides information and education about art and culture of Khmer civilization.",
-      lat: 13.3667,
-      lng: 103.8583,
-      category: "Museum",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1515542706656-8e6ef17a1ed2?q=80&w=1000",
-      ],
-    },
-
-    // 2 Markets
-    {
-      name: "Phsar Thmei (Central Market)",
-      nameKh: "ផ្សារធំថ្មី",
-      description:
-        "The Central Market is an Art Deco landmark in Phnom Penh, the capital of Cambodia. The bright yellow building completed in 1937 has a unique central dome with four wings.",
-      lat: 11.5694,
-      lng: 104.9211,
-      category: "Market",
-      province: "Phnom Penh",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1582234372722-50d7ccc30ebd?q=80&w=1000",
-      ],
-    },
-    {
-      name: "Siem Reap Night Market",
-      nameKh: "ផ្សាររាត្រីខេត្តសៀមរាប",
-      description:
-        "The Angkor Night Market in Siem Reap is the first night market in Cambodia, established to preserve Khmer traditional handicrafts.",
-      lat: 13.3547,
-      lng: 103.8547,
-      category: "Market",
-      province: "Siem Reap",
-      isVerified: true,
-      images: [
-        "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?q=80&w=1000",
-      ],
-    },
-  ];
-
-  for (const place of places) {
-    const createdPlace = await (prisma.place as any).create({
-      data: {
-        ...place,
-        accommodations: {
-          create: [
-            {
-              name: "Luxury Resort",
-              type: "Hotel",
-              priceRange: "$100 - $300",
-            },
-            {
-              name: "Budget Guesthouse",
-              type: "Guesthouse",
-              priceRange: "$10 - $25",
-            },
-          ],
-        },
-        foods: {
-          create: [
-            {
-              name: "Traditional Khmer Restaurant",
-              type: "Restaurant",
-              priceRange: "$5 - $15",
-            },
-            {
-              name: "Street Food Stalls",
-              type: "Street Food",
-              priceRange: "$1 - $5",
-            },
-          ],
-        },
-      },
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: controller.signal,
+      cache: "no-store",
     });
-    console.log(`Created place: ${createdPlace.name}`);
+    const ok = res.ok;
+    imageValidationCache.set(url, ok);
+    return ok;
+  } catch {
+    imageValidationCache.set(url, false);
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getValidImages(images?: string[]) {
+  const candidates = (images || []).map((img) => withUnsplashParams(img.trim()));
+  const valid: string[] = [];
+
+  for (const url of candidates) {
+    if (!url) continue;
+    if (await isImageReachable(url)) valid.push(url);
   }
 
-  // Create an Admin user
-  await (prisma.user as any).upsert({
-    where: { email: "admin@lomhea.com" },
-    update: {},
-    create: {
-      email: "admin@lomhea.com",
-      name: "Lomhea Admin",
-      role: "ADMIN",
-    },
-  });
+  if (!valid.length) return [FALLBACK_IMAGE];
+  return valid;
+}
 
-  console.log("Seeding finished.");
+const PROVINCE_CENTER: Record<string, { lat: number; lng: number }> = {
+  "Siem Reap": { lat: 13.3633, lng: 103.8564 },
+  "Preah Sihanouk": { lat: 10.625, lng: 103.523 },
+  Mondulkiri: { lat: 12.455, lng: 107.18 },
+  Kampot: { lat: 10.61, lng: 104.18 },
+  Battambang: { lat: 13.0957, lng: 103.2022 },
+  "Phnom Penh": { lat: 11.5564, lng: 104.9282 },
+  Ratanakiri: { lat: 13.7394, lng: 106.9873 },
+  "Kampong Speu": { lat: 11.459, lng: 104.524 },
+  Kep: { lat: 10.4829, lng: 104.3167 },
+  Kratie: { lat: 12.4881, lng: 106.0188 },
+  "Koh Kong": { lat: 11.6153, lng: 102.9838 },
+  "Kampong Thom": { lat: 12.7112, lng: 104.8885 },
+  "Preah Vihear": { lat: 13.791, lng: 104.978 },
+  "Kampong Cham": { lat: 11.9934, lng: 105.4635 },
+  Pailin: { lat: 12.8489, lng: 102.6093 },
+  Kandal: { lat: 11.2237, lng: 105.1259 },
+  "Banteay Meanchey": { lat: 13.7532, lng: 102.9896 },
+  "Oddar Meanchey": { lat: 14.1609, lng: 103.8216 },
+  "Stung Treng": { lat: 13.5259, lng: 105.9683 },
+  "Kampong Chhnang": { lat: 12.25, lng: 104.6667 },
+  Takeo: { lat: 10.995, lng: 104.784 },
+  "Tboung Khmum": { lat: 11.89, lng: 105.65 },
+};
+
+function hash(input: string) {
+  let h = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    h = (h << 5) - h + input.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function toCoordinates(name: string, province: string) {
+  const center = PROVINCE_CENTER[province] ?? { lat: 12.5657, lng: 104.991 };
+  const seed = hash(`${name}-${province}`);
+  const latJitter = ((seed % 1000) / 1000 - 0.5) * 0.18;
+  const lngJitter = ((((seed / 1000) | 0) % 1000) / 1000 - 0.5) * 0.18;
+  return {
+    lat: Number((center.lat + latJitter).toFixed(6)),
+    lng: Number((center.lng + lngJitter).toFixed(6)),
+  };
+}
+
+function sampleFeaturedIndexes(total: number, featuredCount: number) {
+  const arr = Array.from({ length: total }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return new Set(arr.slice(0, Math.min(featuredCount, total)));
+}
+
+async function main() {
+  console.log("Resetting place data...");
+
+  if (seedPlaces.length < REQUIRED_PLACE_COUNT) {
+    throw new Error(
+      `Seed file has ${seedPlaces.length} places. Please provide at least ${REQUIRED_PLACE_COUNT} places.`,
+    );
+  }
+
+  await prisma.favorite.deleteMany({});
+  await prisma.review.deleteMany({});
+  await prisma.accommodation.deleteMany({});
+  await prisma.food.deleteMany({});
+  await prisma.report.deleteMany({});
+  await prisma.place.deleteMany({});
+
+  const normalizedInput = (seedPlaces as InputPlace[]).slice(0, REQUIRED_PLACE_COUNT);
+  const featuredIndexes = sampleFeaturedIndexes(normalizedInput.length, 10);
+  const featuredUntil = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+
+  for (let i = 0; i < normalizedInput.length; i += 1) {
+    const p = normalizedInput[i] as InputPlace;
+    const coords = toCoordinates(p.place_name_en, p.province);
+    const isFeatured = featuredIndexes.has(i);
+    const images = await getValidImages(p.gallery);
+
+    await prisma.place.create({
+      data: {
+        name: p.place_name_en,
+        nameKh: p.place_name_kh || null,
+        province: p.province,
+        category: normalizeCategory(p.category),
+        description: p.description || null,
+        googleMapUrl: p.google_maps_link || null,
+        images,
+        lat: coords.lat,
+        lng: coords.lng,
+        isVerified: true,
+        isFeatured,
+        featuredUntil: isFeatured ? featuredUntil : null,
+      },
+    });
+  }
+
+  console.log(`Imported ${normalizedInput.length} places.`);
+  console.log(`Featured places: ${featuredIndexes.size}`);
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -10,68 +10,89 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users,
   MapPin,
   Star,
   Heart,
-  TrendingUp,
+  Loader2,
   FileText,
   AlertCircle,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Map,
+  ArrowUpRight,
+  Clock3,
 } from "lucide-react";
 import Link from "next/link";
 
+type OverviewResponse = {
+  stats: {
+    totalUsers: number;
+    totalPlaces: number;
+    totalReviews: number;
+    totalFavorites: number;
+  };
+  recentReviews: Array<{
+    id: string;
+    rating: number;
+    comment?: string | null;
+    user?: { name?: string | null; image?: string | null } | null;
+    place?: { name?: string | null } | null;
+  }>;
+  pendingRequests: Array<{
+    id: string;
+    nameEn: string;
+    province: string;
+    createdAt: string;
+    user?: { name?: string | null } | null;
+  }>;
+};
+
+const statsConfig = [
+  {
+    key: "totalUsers",
+    label: "Users",
+    desc: "Registered accounts",
+    icon: Users,
+    href: "/admin/users",
+  },
+  {
+    key: "totalPlaces",
+    label: "Places",
+    desc: "Published map points",
+    icon: MapPin,
+    href: "/admin/places",
+  },
+  {
+    key: "totalReviews",
+    label: "Reviews",
+    desc: "Community feedback",
+    icon: Star,
+    href: "/admin/reviews",
+  },
+  {
+    key: "totalFavorites",
+    label: "Favorites",
+    desc: "Saved places",
+    icon: Heart,
+    href: "/admin/places",
+  },
+] as const;
+
 export default function AdminDashboard() {
-  const { data: overview, isLoading } = useQuery<any>({
+  const { data: overview, isLoading } = useQuery<OverviewResponse>({
     queryKey: ["admin-overview"],
     queryFn: async () => {
       const res = await fetch("/api/admin/overview");
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) throw new Error("Failed to fetch admin overview");
       return res.json();
     },
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: true,
   });
-
-  const stats = [
-    {
-      title: "Total Users",
-      value: overview?.stats?.totalUsers ?? "—",
-      description: "Registered accounts",
-      icon: Users,
-      href: "/admin/users",
-    },
-    {
-      title: "Locations",
-      value: overview?.stats?.totalPlaces ?? "—",
-      description: "Places on the map",
-      icon: MapPin,
-      href: "/admin/places",
-    },
-    {
-      title: "Reviews",
-      value: overview?.stats?.totalReviews ?? "—",
-      description: "Community ratings",
-      icon: Star,
-      href: "/admin/reviews",
-    },
-    {
-      title: "Favorites",
-      value: overview?.stats?.totalFavorites ?? "—",
-      description: "Saved by users",
-      icon: Heart,
-      href: "/admin/places",
-    },
-  ];
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[420px] items-center justify-center">
         <Loader2 className="animate-spin text-muted-foreground" size={28} />
       </div>
     );
@@ -79,41 +100,56 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Overview of your Lomhea platform.
-        </p>
-      </div>
+      <Card className="border-zinc-200/70 dark:border-zinc-800 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-950 dark:to-zinc-900 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold tracking-tight">
+            Admin Overview
+          </CardTitle>
+          <CardDescription>
+            Snapshot of users, content health, and pending moderation tasks.
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statsConfig.map((item) => {
+          const Icon = item.icon;
+          const value =
+            overview?.stats?.[item.key as keyof OverviewResponse["stats"]] ?? 0;
           return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
-                </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stat.description}
-                </p>
+            <Card
+              key={item.key}
+              className="group border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 shadow-sm hover:shadow-md transition-all"
+            >
+              <CardContent className="p-5">
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+                    <Icon size={18} />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="h-8 w-8 opacity-70 group-hover:opacity-100"
+                  >
+                    <Link href={item.href}>
+                      <ArrowUpRight size={14} />
+                    </Link>
+                  </Button>
+                </div>
+                <p className="text-2xl font-bold leading-none">{value}</p>
+                <p className="mt-1 text-sm font-medium">{item.label}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Reviews */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="space-y-1">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card className="border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
               <CardTitle className="text-base">Recent Reviews</CardTitle>
               <CardDescription>Latest community feedback</CardDescription>
             </div>
@@ -122,128 +158,107 @@ export default function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {overview?.recentReviews?.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No reviews yet
-              </p>
-            ) : (
-              overview?.recentReviews?.map((review: any) => (
-                <div key={review.id} className="flex items-start gap-3">
+            {overview?.recentReviews?.length ? (
+              overview.recentReviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="flex items-start gap-3 rounded-xl border border-zinc-200/70 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3"
+                >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={review.user?.image} />
+                    <AvatarImage src={review.user?.image || ""} />
                     <AvatarFallback>
-                      {review.user?.name?.[0]?.toUpperCase()}
+                      {review.user?.name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">
-                        {review.user?.name}
-                      </span>
-                      <div className="flex items-center gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            className={
-                              i < review.rating
-                                ? "fill-primary text-primary"
-                                : "text-muted-foreground/20"
-                            }
-                          />
-                        ))}
-                      </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-semibold">
+                        {review.user?.name || "Anonymous"}
+                      </p>
+                      <Badge variant="secondary" className="gap-1">
+                        <Star size={12} className="fill-current" />
+                        {review.rating}
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {review.place?.name}
+                    <p className="truncate text-xs text-muted-foreground">
+                      {review.place?.name || "Unknown place"}
                     </p>
                     {review.comment && (
-                      <p className="text-xs text-foreground line-clamp-1">
-                        {review.comment}
-                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs">{review.comment}</p>
                     )}
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-6 text-center text-sm text-muted-foreground">
+                No reviews yet
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Pending Requests */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="space-y-1">
+        <Card className="border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
               <CardTitle className="text-base">Pending Requests</CardTitle>
-              <CardDescription>
-                User-submitted location suggestions
-              </CardDescription>
+              <CardDescription>Places waiting for approval</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/requests">View all</Link>
+              <Link href="/admin/requests">Open queue</Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {overview?.pendingRequests?.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">
-                No pending requests
-              </p>
-            ) : (
-              overview?.pendingRequests?.map((req: any) => (
-                <div key={req.id} className="flex items-center gap-4">
-                  <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-                    <Map size={16} className="text-muted-foreground" />
+            {overview?.pendingRequests?.length ? (
+              overview.pendingRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-center gap-3 rounded-xl border border-zinc-200/70 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/60 p-3"
+                >
+                  <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400">
+                    <Clock3 size={15} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {req.nameEn}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      by {req.user?.name} · {req.province}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{req.nameEn}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      by {req.user?.name || "Unknown"} • {req.province}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="shrink-0">
-                    Pending
-                  </Badge>
+                  <Badge variant="secondary">Pending</Badge>
                 </div>
               ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 p-6 text-center text-sm text-muted-foreground">
+                No pending requests
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Links */}
-      <Card>
+      <Card className="border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
-          <CardDescription>Jump to important sections</CardDescription>
+          <CardDescription>Jump to key moderation tools</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               { label: "Manage Places", href: "/admin/places", icon: MapPin },
-              {
-                label: "Review Requests",
-                href: "/admin/requests",
-                icon: FileText,
-              },
-              {
-                label: "View Reports",
-                href: "/admin/reports",
-                icon: AlertCircle,
-              },
-              { label: "Manage Users", href: "/admin/users", icon: Users },
+              { label: "Requests", href: "/admin/requests", icon: FileText },
+              { label: "Reports", href: "/admin/reports", icon: AlertCircle },
+              { label: "Users", href: "/admin/users", icon: Users },
             ].map((action) => {
               const Icon = action.icon;
               return (
                 <Button
                   key={action.href}
                   variant="outline"
-                  className="h-auto py-4 flex-col gap-2"
+                  className="h-auto justify-start gap-3 py-3"
                   asChild
                 >
                   <Link href={action.href}>
-                    <Icon size={20} className="text-muted-foreground" />
-                    <span className="text-xs">{action.label}</span>
+                    <Icon size={16} />
+                    <span>{action.label}</span>
                   </Link>
                 </Button>
               );

@@ -9,65 +9,68 @@ import { placeSchema } from "@/lib/validation";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
+  const fresh = searchParams.get("fresh") === "1";
 
   try {
     const cacheKey = `places:${category || "All"}`;
 
-    const places = await getOrSetCache(
-      cacheKey,
-      async () => {
-        const where = category && category !== "All" ? { category } : {};
+    const fetchPlaces = async () => {
+      const where = category && category !== "All" ? { category } : {};
 
-        try {
-          // New schema path
-          return await (prisma.place as any).findMany({
-            where,
-            select: {
-              id: true,
-              name: true,
-              nameKh: true,
-              lat: true,
-              lng: true,
-              category: true,
-              province: true,
-              images: true,
-              rating: true,
-              reviewCount: true,
-              isVerified: true,
-              isFeatured: true,
-              featuredUntil: true,
-            },
-            orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
-          });
-        } catch (error) {
-          // Backward compatibility for DBs that haven't run the new migration yet
-          const legacy = await prisma.place.findMany({
-            where,
-            select: {
-              id: true,
-              name: true,
-              nameKh: true,
-              lat: true,
-              lng: true,
-              category: true,
-              province: true,
-              images: true,
-              rating: true,
-              reviewCount: true,
-              isVerified: true,
-            },
-            orderBy: { createdAt: "desc" },
-          });
+      try {
+        // New schema path
+        return await (prisma.place as any).findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            lat: true,
+            lng: true,
+            category: true,
+            province: true,
+            images: true,
+            rating: true,
+            reviewCount: true,
+            isVerified: true,
+            isFeatured: true,
+            featuredUntil: true,
+            updatedAt: true,
+          },
+          orderBy: [{ isFeatured: "desc" }, { createdAt: "desc" }],
+        });
+      } catch (error) {
+        // Backward compatibility for DBs that haven't run the new migration yet
+        const legacy = await prisma.place.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            lat: true,
+            lng: true,
+            category: true,
+            province: true,
+            images: true,
+            rating: true,
+            reviewCount: true,
+            isVerified: true,
+            updatedAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        });
 
-          return legacy.map((p) => ({
-            ...p,
-            isFeatured: false,
-            featuredUntil: null,
-          }));
-        }
-      },
-      600,
-    ); // Cache for 10 minutes
+        return legacy.map((p) => ({
+          ...p,
+          isFeatured: false,
+          featuredUntil: null,
+        }));
+      }
+    };
+
+    const places = fresh
+      ? await fetchPlaces()
+      : await getOrSetCache(cacheKey, fetchPlaces, 600); // Cache for 10 minutes
 
     return NextResponse.json(places, {
       headers: {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useUIStore } from "@/stores/uiStore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react";
 
 const FLAGS = {
-  EN: "https://flagcdn.com/w80/gb.png",
+  EN: "https://flagcdn.com/w80/us.png",
   KH: "https://flagcdn.com/w80/kh.png",
 };
 
@@ -25,7 +25,7 @@ export function LanguageSwitcher() {
     } else {
       document.body.style.fontFamily = "var(--font-inter), sans-serif";
     }
-    document.documentElement.lang = language.toLowerCase();
+    document.documentElement.lang = language === "KH" ? "km" : "en";
   }, [language]);
 
   return (

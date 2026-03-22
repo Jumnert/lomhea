@@ -1,0 +1,362 @@
+[
+  {
+    "place_name_en": "Angkor Wat",
+    "place_name_kh": "អង្គរវត្ត",
+    "province": "Siem Reap",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Angkor+Wat",
+    "description": "The world's largest religious monument and a UNESCO World Heritage site.",
+    "gallery": ["https://images.unsplash.com/photo-1540914124281-3427106e7419", "https://images.unsplash.com/photo-1600611051048-0c6776109968"]
+  },
+  {
+    "place_name_en": "Koh Rong Long Beach",
+    "place_name_kh": "ឆ្នេរឡុងប៊ីច កោះរ៉ុង",
+    "province": "Preah Sihanouk",
+    "category": "Beach/Island",
+    "google_maps_link": "https://maps.google.com/?q=Koh+Rong+Long+Beach",
+    "description": "A 7km stretch of pristine white sand and turquoise water.",
+    "gallery": ["https://images.unsplash.com/photo-1589197331516-4d84593eb64b", "https://images.unsplash.com/photo-1544131561-1e2474f83654"]
+  },
+  {
+    "place_name_en": "Bousra Waterfall",
+    "place_name_kh": "ទឹកធ្លាក់ប៊ូស្រា",
+    "province": "Mondulkiri",
+    "category": "Waterfall",
+    "google_maps_link": "https://maps.google.com/?q=Bousra+Waterfall",
+    "description": "The most famous multi-tier waterfall in the highlands.",
+    "gallery": ["https://images.unsplash.com/photo-1433086966358-54859d0ed716"]
+  },
+  {
+    "place_name_en": "Bokor Hill Station",
+    "place_name_kh": "ស្ថានីយភ្នំបូកគោ",
+    "province": "Kampot",
+    "category": "Mountain/Historical",
+    "google_maps_link": "https://maps.google.com/?q=Bokor+Hill+Station",
+    "description": "A cool climate mountain retreat with colonial-era ruins.",
+    "gallery": ["https://images.unsplash.com/photo-1506744038136-46273834b3fb"]
+  },
+  {
+    "place_name_en": "Phnom Sampeau",
+    "place_name_kh": "ភ្នំសំពៅ",
+    "province": "Battambang",
+    "category": "Mountain/Nature",
+    "google_maps_link": "https://maps.google.com/?q=Phnom+Sampeau",
+    "description": "Famous for the sunset bat exodus and stunning landscape views.",
+    "gallery": ["https://images.unsplash.com/photo-1518495973542-4542c06a5843"]
+  },
+  {
+    "place_name_en": "Royal Palace",
+    "place_name_kh": "ព្រះបរមរាជវាំង",
+    "province": "Phnom Penh",
+    "category": "Cultural Landmark",
+    "google_maps_link": "https://maps.google.com/?q=Royal+Palace+Phnom+Penh",
+    "description": "Official residence of the King, featuring classic Khmer architecture.",
+    "gallery": ["https://images.unsplash.com/photo-1528127269322-539801943592"]
+  },
+  {
+    "place_name_en": "Yeak Laom Lake",
+    "place_name_kh": "បឹងយក្សឡោម",
+    "province": "Ratanakiri",
+    "category": "Crater Lake",
+    "google_maps_link": "https://maps.google.com/?q=Yeak+Laom+Lake",
+    "description": "A deep, clear volcanic lake perfect for swimming.",
+    "gallery": ["https://images.unsplash.com/photo-1470770841072-f978cf4d019e"]
+  },
+  {
+    "place_name_en": "Kbal Chhay Waterfall",
+    "place_name_kh": "ទឹកធ្លាក់ក្បាលឆាយ",
+    "province": "Preah Sihanouk",
+    "category": "Waterfall",
+    "google_maps_link": "https://maps.google.com/?q=Kbal+Chhay+Waterfall",
+    "description": "A popular picnic spot with natural cascades near the coast.",
+    "gallery": ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e"]
+  },
+  {
+    "place_name_en": "Kirirum National Park",
+    "place_name_kh": "ឧទ្យានជាតិគិរីរម្យ",
+    "province": "Kampong Speu",
+    "category": "National Park",
+    "google_maps_link": "https://maps.google.com/?q=Kirirom+National+Park",
+    "description": "Highland pine forest known for camping and cool weather.",
+    "gallery": ["https://images.unsplash.com/photo-1447752875215-b2761acb3c5d"]
+  },
+  {
+    "place_name_en": "Kep Crab Market",
+    "place_name_kh": "ផ្សារក្តាម",
+    "province": "Kep",
+    "category": "Recreation/Food",
+    "google_maps_link": "https://maps.google.com/?q=Kep+Crab+Market",
+    "description": "Iconic waterfront market famous for fresh seafood.",
+    "gallery": ["https://images.unsplash.com/photo-1514933651103-005eec06c04b"]
+  },
+  {
+    "place_name_en": "Bayon Temple",
+    "place_name_kh": "ប្រាសាទបាយ័ន",
+    "province": "Siem Reap",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Bayon+Temple",
+    "description": "Ancient temple with 54 towers and over 200 massive stone faces.",
+    "gallery": ["https://images.unsplash.com/photo-1563294132-4752b04f1416"]
+  },
+  {
+    "place_name_en": "Bamboo Train",
+    "place_name_kh": "ឡូរី",
+    "province": "Battambang",
+    "category": "Recreation/Adventure",
+    "google_maps_link": "https://maps.google.com/?q=Battambang+Bamboo+Train",
+    "description": "A unique adventure riding on a bamboo platform over railway tracks.",
+    "gallery": ["https://images.unsplash.com/photo-1474487024268-381c8282305a"]
+  },
+  {
+    "place_name_en": "Koh Tonsay (Rabbit Island)",
+    "place_name_kh": "កោះទន្សាយ",
+    "province": "Kep",
+    "category": "Island/Beach",
+    "google_maps_link": "https://maps.google.com/?q=Koh+Tonsay",
+    "description": "Quiet island with shallow waters and beachfront bungalows.",
+    "gallery": ["https://images.unsplash.com/photo-1499793983690-e29da59ef1c2"]
+  },
+  {
+    "place_name_en": "Wat Phnom",
+    "place_name_kh": "វត្តភ្នំ",
+    "province": "Phnom Penh",
+    "category": "Cultural Landmark",
+    "google_maps_link": "https://maps.google.com/?q=Wat+Phnom",
+    "description": "The spiritual heart of the city located on a small hill.",
+    "gallery": ["https://images.unsplash.com/photo-1548013146-72479768bbaa"]
+  },
+  {
+    "place_name_en": "Mekong Dolphin Kampi",
+    "place_name_kh": "អន្លង់ផ្សោតកាំពី",
+    "province": "Kratie",
+    "category": "Wildlife/River",
+    "google_maps_link": "https://maps.google.com/?q=Kampi+Dolphin+Viewing",
+    "description": "The best place to watch rare Irrawaddy freshwater dolphins.",
+    "gallery": ["https://images.unsplash.com/photo-1518128958364-65859d70aa41"]
+  },
+  {
+    "place_name_en": "Tatai Waterfall",
+    "place_name_kh": "ទឹកធ្លាក់តាតៃ",
+    "province": "Koh Kong",
+    "category": "Waterfall/Eco-tourism",
+    "google_maps_link": "https://maps.google.com/?q=Tatai+Waterfall",
+    "description": "A majestic semi-circular waterfall in the Cardamom mountains.",
+    "gallery": ["https://images.unsplash.com/photo-1500382017468-9049fed747ef"]
+  },
+  {
+    "place_name_en": "Sambor Prei Kuk",
+    "place_name_kh": "សំបូរព្រៃគុក",
+    "province": "Kampong Thom",
+    "category": "UNESCO Site",
+    "google_maps_link": "https://maps.google.com/?q=Sambor+Prei+Kuk",
+    "description": "Ancient pre-Angkorian brick temples set in a quiet forest.",
+    "gallery": ["https://images.unsplash.com/photo-1580541832626-2a7131ee809f"]
+  },
+  {
+    "place_name_en": "Oudong Mountain",
+    "place_name_kh": "ភ្នំឧដុង្គ",
+    "province": "Kampong Speu",
+    "category": "Mountain/Historical",
+    "google_maps_link": "https://maps.google.com/?q=Oudong+Mountain",
+    "description": "A former royal capital with beautiful stupas and panoramic views.",
+    "gallery": ["https://images.unsplash.com/photo-1464822759023-fed622ff2c3b"]
+  },
+  {
+    "place_name_en": "Peam Krasaop Mangrove",
+    "place_name_kh": "ពាមក្រសោប",
+    "province": "Koh Kong",
+    "category": "Nature/Eco-tourism",
+    "google_maps_link": "https://maps.google.com/?q=Peam+Krasaop+Mangrove",
+    "description": "One of Southeast Asia's largest mangrove forests with a boardwalk.",
+    "gallery": ["https://images.unsplash.com/photo-1516026672322-bc52d61a55d5"]
+  },
+  {
+    "place_name_en": "Saracen Bay",
+    "place_name_kh": "ឆ្នេរសារ៉ាសេន",
+    "province": "Preah Sihanouk",
+    "category": "Beach/Island",
+    "google_maps_link": "https://maps.google.com/?q=Saracen+Bay",
+    "description": "Crystal clear water and luxury resorts on Koh Rong Samloem.",
+    "gallery": ["https://images.unsplash.com/photo-1507525428034-b723cf961d3e"]
+  },
+  {
+    "place_name_en": "Phnom Kulen",
+    "place_name_kh": "ភ្នំគូលែន",
+    "province": "Siem Reap",
+    "category": "Sacred Mountain",
+    "google_maps_link": "https://maps.google.com/?q=Phnom+Kulen",
+    "description": "Birthplace of the Khmer Empire, featuring waterfalls and river carvings.",
+    "gallery": ["https://images.unsplash.com/photo-1505765050516-f72dcac9c70f"]
+  },
+  {
+    "place_name_en": "Kampot River",
+    "place_name_kh": "ព្រែកកំពត",
+    "province": "Kampot",
+    "category": "Riverside/Recreation",
+    "google_maps_link": "https://maps.google.com/?q=Kampot+River",
+    "description": "Ideal for sunset cruises, kayaking, and riverside dining.",
+    "gallery": ["https://images.unsplash.com/photo-1469474099711-423907c1b1ec"]
+  },
+  {
+    "place_name_en": "Koh Ker",
+    "place_name_kh": "ប្រាសាទកោះកេរ្តិ៍",
+    "province": "Preah Vihear",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Koh+Ker",
+    "description": "A unique 7-tiered pyramid temple in a remote forest setting.",
+    "gallery": ["https://images.unsplash.com/photo-1524230507669-5ff97982bb5e"]
+  },
+  {
+    "place_name_en": "Preah Vihear Temple",
+    "place_name_kh": "ប្រាសាទព្រះវិហារ",
+    "province": "Preah Vihear",
+    "category": "UNESCO Site",
+    "google_maps_link": "https://maps.google.com/?q=Preah+Vihear+Temple",
+    "description": "An ancient temple perched on a cliff at the border of Thailand.",
+    "gallery": ["https://images.unsplash.com/photo-1516483638261-f4dbaf036963"]
+  },
+  {
+    "place_name_en": "Silver Pagoda",
+    "place_name_kh": "ព្រះវិហារព្រះកែវមរកត",
+    "province": "Phnom Penh",
+    "category": "Cultural Landmark",
+    "google_maps_link": "https://maps.google.com/?q=Silver+Pagoda",
+    "description": "Famous for its floor made of thousands of silver tiles.",
+    "gallery": ["https://images.unsplash.com/photo-1531315630201-bb152f5982fc"]
+  },
+  {
+    "place_name_en": "Beng Mealea",
+    "place_name_kh": "ប្រាសាទបឹងមាលា",
+    "province": "Siem Reap",
+    "category": "Ancient Temple",
+    "google_maps_link": "https://maps.google.com/?q=Beng+Mealea",
+    "description": "A massive unrestored temple overgrown with jungle vines.",
+    "gallery": ["https://images.unsplash.com/photo-1533154683836-84ea7a0bc310"]
+  },
+  {
+    "place_name_en": "Ta Prohm",
+    "place_name_kh": "ប្រាសាទតាព្រហ្ម",
+    "province": "Siem Reap",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Ta+Prohm",
+    "description": "The iconic temple where tree roots merge with ancient stone.",
+    "gallery": ["https://images.unsplash.com/photo-1558862107-d49ef2a04d72"]
+  },
+  {
+    "place_name_en": "Otres Beach",
+    "place_name_kh": "ឆ្នេរអូត្រេស",
+    "province": "Preah Sihanouk",
+    "category": "Beach",
+    "google_maps_link": "https://maps.google.com/?q=Otres+Beach",
+    "description": "A relaxed beach area known for its sunset views and local bars.",
+    "gallery": ["https://images.unsplash.com/photo-1473116763249-2faaef81ccda"]
+  },
+  {
+    "place_name_en": "Tonle Sap Floating Village",
+    "place_name_kh": "ភូមិបណ្តែតទឹក",
+    "province": "Siem Reap",
+    "category": "Cultural Site",
+    "google_maps_link": "https://maps.google.com/?q=Tonle+Sap+Floating+Village",
+    "description": "Explore the unique lifestyle of people living on the massive lake.",
+    "gallery": ["https://images.unsplash.com/photo-1508933461874-c76bc86979ed"]
+  },
+  {
+    "place_name_en": "Bamboo Bridge",
+    "place_name_kh": "ស្ពានឫស្សី",
+    "province": "Kampong Cham",
+    "category": "Recreation/Bridge",
+    "google_maps_link": "https://maps.google.com/?q=Bamboo+Bridge+Kampong+Cham",
+    "description": "A seasonal handmade bridge connecting to Koh Pen island.",
+    "gallery": ["https://images.unsplash.com/photo-1511974035430-5de47d3b8739"]
+  },
+  {
+    "place_name_en": "Independence Monument",
+    "place_name_kh": "វិមានឯករាជ្យ",
+    "province": "Phnom Penh",
+    "category": "Historical Landmark",
+    "google_maps_link": "https://maps.google.com/?q=Independence+Monument+Phnom+Penh",
+    "description": "A lotus-shaped monument celebrating liberation from France.",
+    "gallery": ["https://images.unsplash.com/photo-1521747116042-5a810fda9664"]
+  },
+  {
+    "place_name_en": "Kep National Park",
+    "place_name_kh": "ឧទ្យានជាតិកែប",
+    "province": "Kep",
+    "category": "Nature/Hiking",
+    "google_maps_link": "https://maps.google.com/?q=Kep+National+Park",
+    "description": "Features jungle trails with stunning views of the coastline.",
+    "gallery": ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e"]
+  },
+  {
+    "place_name_en": "Phnom Yat",
+    "place_name_kh": "ភ្នំយ៉ាត",
+    "province": "Pailin",
+    "category": "Mountain/Cultural",
+    "google_maps_link": "https://maps.google.com/?q=Phnom+Yat",
+    "description": "A sacred mountain overlooking the gem-mining town of Pailin.",
+    "gallery": ["https://images.unsplash.com/photo-1501785888041-af3ef285b470"]
+  },
+  {
+    "place_name_en": "Chambok Eco-tourism",
+    "place_name_kh": "សហគមន៍ទេសចរណ៍ចំបក់",
+    "province": "Kampong Speu",
+    "category": "Eco-tourism",
+    "google_maps_link": "https://maps.google.com/?q=Chambok+Eco+Tourism",
+    "description": "Hiking, waterfalls, and local ox-cart rides.",
+    "gallery": ["https://images.unsplash.com/photo-1533735328623-28e0cb247161"]
+  },
+  {
+    "place_name_en": "Koh Daich (Silk Island)",
+    "place_name_kh": "កោះដាច់",
+    "province": "Kandal",
+    "category": "Cultural Site",
+    "google_maps_link": "https://maps.google.com/?q=Koh+Dach",
+    "description": "Visit traditional silk weaving villages along the Mekong.",
+    "gallery": ["https://images.unsplash.com/photo-1511300636408-a63a89df3482"]
+  },
+  {
+    "place_name_en": "Central Market",
+    "place_name_kh": "ផ្សារធំថ្មី",
+    "province": "Phnom Penh",
+    "category": "Cultural Landmark",
+    "google_maps_link": "https://maps.google.com/?q=Central+Market+Phnom+Penh",
+    "description": "An Art Deco masterpiece and a shopping hub for tourists.",
+    "gallery": ["https://images.unsplash.com/photo-1555392859-7a0451bee740"]
+  },
+  {
+    "place_name_en": "Srah Srang",
+    "place_name_kh": "ស្រះស្រង់",
+    "province": "Siem Reap",
+    "category": "Historical Site",
+    "google_maps_link": "https://maps.google.com/?q=Srah+Srang",
+    "description": "The Royal Bathing reservoir, beautiful at sunrise.",
+    "gallery": ["https://images.unsplash.com/photo-1506744038136-46273834b3fb"]
+  },
+  {
+    "place_name_en": "Preah Khan",
+    "place_name_kh": "ប្រាសាទព្រះខ័ន",
+    "province": "Siem Reap",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Preah+Khan",
+    "description": "A sprawling Buddhist temple complex built by Jayavarman VII.",
+    "gallery": ["https://images.unsplash.com/photo-1563294132-4752b04f1416"]
+  },
+  {
+    "place_name_en": "Banteay Srei",
+    "place_name_kh": "ប្រាសាទបន្ទាយស្រី",
+    "province": "Siem Reap",
+    "category": "Historical Temple",
+    "google_maps_link": "https://maps.google.com/?q=Banteay+Srei",
+    "description": "Known for its delicate pink sandstone carvings.",
+    "gallery": ["https://images.unsplash.com/photo-1518495973542-4542c06a5843"]
+  },
+  {
+    "place_name_en": "Koh Trong",
+    "place_name_kh": "កោះទ្រង់",
+    "province": "Kratie",
+    "category": "Eco-tourism",
+    "google_maps_link": "https://maps.google.com/?q=Koh+Trong",
+    "description": "Cycle around this Mekong island to see pomelo farms and rural life.",
+    "gallery": ["https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1"]
+  }
+]

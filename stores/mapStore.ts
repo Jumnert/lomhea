@@ -5,6 +5,11 @@ interface MapState {
   setSelectedPlaceId: (id: string | null) => void;
   category: string;
   setCategory: (category: string) => void;
+  province: string;
+  setProvince: (province: string) => void;
+  minRating: number;
+  setMinRating: (rating: number) => void;
+  resetFilters: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   viewState: {
@@ -24,6 +29,11 @@ export const useMapStore = create<MapState>((set) => ({
   setSelectedPlaceId: (id) => set({ selectedPlaceId: id }),
   category: "All",
   setCategory: (category) => set({ category }),
+  province: "All",
+  setProvince: (province) => set({ province }),
+  minRating: 0,
+  setMinRating: (rating) => set({ minRating: rating }),
+  resetFilters: () => set({ category: "All", province: "All", minRating: 0 }),
   searchQuery: "",
   setSearchQuery: (query) => set({ searchQuery: query }),
   viewState: {

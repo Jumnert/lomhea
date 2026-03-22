@@ -5,6 +5,10 @@ import {
   Map as MapIcon,
   Heart,
   Search,
+  X,
+  MapPin,
+  SlidersHorizontal,
+  FilterX,
   User,
   LogOut,
   ShieldCheck,
@@ -28,6 +32,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useMapStore } from "@/stores/mapStore";
+import { useUIStore } from "@/stores/uiStore";
 import { useTheme } from "next-themes";
 import { SuggestPlaceDialog } from "@/components/modals/SuggestPlaceDialog";
 import { AddPlaceDialog } from "@/components/ui/add-place-dialog";
@@ -36,19 +41,258 @@ import { ProfileDialog } from "@/components/modals/ProfileDialog";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { useWebHaptics } from "web-haptics/react";
 import { NotificationBell } from "./NotificationBell";
+import { useQuery } from "@tanstack/react-query";
+import { Place } from "@/types/app";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function Navbar() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
-  const { searchQuery, setSearchQuery } = useMapStore();
+  const {
+    searchQuery,
+    setSearchQuery,
+    setSelectedPlaceId,
+    category,
+    setCategory,
+    province,
+    setProvince,
+    minRating,
+    setMinRating,
+    resetFilters,
+  } = useMapStore();
+  const { setPanelOpen, language } = useUIStore();
   const { resolvedTheme, setTheme } = useTheme();
   const { trigger } = useWebHaptics();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [inputValue, setInputValue] = useState(searchQuery);
+  const [recentSearchIds, setRecentSearchIds] = useState<string[]>([]);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchCacheRef = React.useRef<Map<string, Place[]>>(new Map());
+  const RECENT_SEARCHES_KEY = "lomhea_recent_searches";
+
+  const { data: places = [] } = useQuery<Place[]>({
+    queryKey: ["places"],
+    queryFn: async () => {
+      const res = await fetch("/api/places");
+      if (!res.ok) throw new Error("Failed to fetch places");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 60,
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+        setActiveIndex(-1);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery === "") setInputValue("");
+  }, [searchQuery]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentSearchIds(parsed.filter((id) => typeof id === "string"));
+      }
+    } catch {
+      setRecentSearchIds([]);
+    }
+  }, []);
+
+  const normalize = React.useCallback((value: string) => {
+    return value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .trim();
+  }, []);
+
+  const suggestions = React.useMemo(() => {
+    const key = normalize(inputValue);
+    if (!key) return [];
+
+    const cached = searchCacheRef.current.get(key);
+    if (cached) return cached;
+
+    const next = places
+      .filter((p) => {
+        const q = key;
+        const name = normalize(p.name);
+        const nameKh = normalize(p.nameKh || "");
+        const province = normalize(p.province);
+        const category = normalize(p.category);
+
+        return (
+          name.includes(q) ||
+          nameKh.includes(q) ||
+          province.includes(q) ||
+          category.includes(q)
+        );
+      })
+      .slice(0, 10);
+
+    searchCacheRef.current.set(key, next);
+    if (searchCacheRef.current.size > 100) {
+      const oldest = searchCacheRef.current.keys().next().value;
+      if (oldest) searchCacheRef.current.delete(oldest);
+    }
+    return next;
+  }, [places, inputValue, normalize]);
+
+  const recentPlaces = React.useMemo(() => {
+    if (!recentSearchIds.length || !places.length) return [];
+    const byId = new Map(places.map((p) => [p.id, p]));
+    return recentSearchIds
+      .map((id) => byId.get(id))
+      .filter((p): p is Place => Boolean(p))
+      .slice(0, 6);
+  }, [places, recentSearchIds]);
+
+  const visibleResults = React.useMemo(() => {
+    return inputValue.trim().length === 0 ? recentPlaces : suggestions;
+  }, [inputValue, recentPlaces, suggestions]);
+
+  const provinces = React.useMemo(() => {
+    return ["All", ...Array.from(new Set(places.map((p) => p.province))).sort()];
+  }, [places]);
+
+  const ratingOptions = [
+    { label: "All Ratings", value: "0" },
+    { label: "1★ and up", value: "1" },
+    { label: "2★ and up", value: "2" },
+    { label: "3★ and up", value: "3" },
+    { label: "4★ and up", value: "4" },
+    { label: "5★ only", value: "5" },
+  ];
+
+  const handleSearchChange = (value: string) => {
+    setInputValue(value);
+    setSearchQuery(value);
+    setIsSearchOpen(value.trim().length > 0);
+    setActiveIndex(-1);
+  };
+
+  const handleSelectPlace = (place: Place) => {
+    setInputValue("");
+    setSearchQuery("");
+    setIsSearchOpen(false);
+    setActiveIndex(-1);
+    setSelectedPlaceId(place.id);
+    setPanelOpen(true);
+
+    setRecentSearchIds((prev) => {
+      const next = [place.id, ...prev.filter((id) => id !== place.id)].slice(
+        0,
+        8,
+      );
+      try {
+        localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    // Force map fly animation even if the same place was already selected.
+    setSelectedPlaceId(null);
+    requestAnimationFrame(() => {
+      setSelectedPlaceId(place.id);
+    });
+  };
+
+  const clearSearch = () => {
+    setInputValue("");
+    setSearchQuery("");
+    setIsSearchOpen(false);
+    setActiveIndex(-1);
+    searchInputRef.current?.focus();
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearchIds([]);
+    try {
+      localStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch {}
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      setIsSearchOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (!isSearchOpen || visibleResults.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((prev) => Math.min(prev + 1, visibleResults.length - 1));
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+
+    if (e.key === "Enter") {
+      if (activeIndex >= 0) {
+        e.preventDefault();
+        handleSelectPlace(visibleResults[activeIndex]);
+      }
+    }
+  };
+
+  const highlightMatch = (text: string, rawQuery: string) => {
+    if (!rawQuery.trim()) return text;
+    const idx = text.toLowerCase().indexOf(rawQuery.toLowerCase());
+    if (idx === -1) return text;
+    return (
+      <>
+        {text.slice(0, idx)}
+        <span className="font-semibold text-foreground">
+          {text.slice(idx, idx + rawQuery.length)}
+        </span>
+        {text.slice(idx + rawQuery.length)}
+      </>
+    );
+  };
+
+  const displayPlaceName = (place: Place) =>
+    language === "KH" && place.nameKh ? place.nameKh : place.name;
 
   const handleLogout = async () => {
     await signOut();
@@ -73,15 +317,118 @@ export function Navbar() {
         {/* Main Controls - Search becomes flex-1 on mobile */}
         <div className="flex flex-1 md:flex-none items-center gap-2 md:gap-3 pointer-events-auto">
           {/* Search Bar */}
-          <div className="flex flex-1 md:flex-none items-center bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl px-4 py-2 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-white/5 md:min-w-[360px] focus-within:ring-2 ring-primary/20 transition-all">
+          <div
+            ref={searchContainerRef}
+            className="relative flex flex-1 md:flex-none items-center bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl px-4 py-2 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1)] border border-white/40 dark:border-white/5 md:min-w-[360px] focus-within:ring-2 ring-primary/20 transition-all"
+          >
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                  aria-label="Open filters"
+                >
+                  <SlidersHorizontal size={15} />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[340px] sm:max-w-[340px]">
+                <SheetHeader>
+                  <SheetTitle>Map Filters</SheetTitle>
+                  <SheetDescription>
+                    Filter by province, category, and minimum rating.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="space-y-5 px-4 pb-4">
+                  <div className="space-y-2">
+                    <Label>Province</Label>
+                    <Select value={province} onValueChange={setProvince}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select province" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {provinces.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {p}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">All</SelectItem>
+                        <SelectItem value="Temple">Temple</SelectItem>
+                        <SelectItem value="Beach">Beach</SelectItem>
+                        <SelectItem value="Nature">Nature</SelectItem>
+                        <SelectItem value="Waterfall">Waterfall</SelectItem>
+                        <SelectItem value="Market">Market</SelectItem>
+                        <SelectItem value="Museum">Museum</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Minimum Rating</Label>
+                    <Select
+                      value={String(minRating)}
+                      onValueChange={(v) => setMinRating(Number(v))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ratingOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      resetFilters();
+                      setIsFilterOpen(false);
+                    }}
+                  >
+                    <FilterX size={14} className="mr-2" />
+                    Reset Filters
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
             <Search size={16} className="text-zinc-400 mr-2 shrink-0" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search temples, beaches..."
               className="bg-transparent border-none outline-none text-sm text-zinc-600 dark:text-zinc-300 w-full placeholder:text-zinc-400"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={inputValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onFocus={() => setIsSearchOpen(inputValue.trim().length > 0)}
+              onKeyDown={handleSearchKeyDown}
             />
+            {inputValue && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="mr-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
             {mounted ? (
               ["ADMIN", "MODERATOR"].includes((session?.user as any)?.role) ? (
                 <AddPlaceDialog
@@ -101,6 +448,95 @@ export function Navbar() {
               )
             ) : (
               <div className="w-8 h-8" />
+            )}
+
+            {isSearchOpen && (
+              <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[70] overflow-hidden rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md shadow-2xl">
+                {inputValue.trim().length === 0 ? (
+                  <>
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-200/70 dark:border-zinc-800">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Recent Searches
+                      </p>
+                      {recentPlaces.length > 0 && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            clearRecentSearches();
+                          }}
+                          className="text-[11px] text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {recentPlaces.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400">
+                        No recent searches yet.
+                      </div>
+                    ) : (
+                      recentPlaces.map((place, index) => (
+                        <button
+                          key={place.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectPlace(place);
+                          }}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                            activeIndex === index
+                              ? "bg-primary/10"
+                              : "hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80"
+                          }`}
+                        >
+                          <MapPin className="h-4 w-4 shrink-0 text-primary/80" />
+                          <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
+                          {displayPlaceName(place)}
+                        </p>
+                            <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                              {place.province} · {place.category}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </>
+                ) : suggestions.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400">
+                    No results found for "{inputValue}".
+                  </div>
+                ) : (
+                  suggestions.map((place, index) => (
+                    <button
+                      key={place.id}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSelectPlace(place);
+                      }}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                        activeIndex === index
+                          ? "bg-primary/10"
+                          : "hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80"
+                      }`}
+                    >
+                      <MapPin className="h-4 w-4 shrink-0 text-primary/80" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
+                          {highlightMatch(displayPlaceName(place), inputValue)}
+                        </p>
+                        <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                          {place.province} · {place.category}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
             )}
           </div>
 

@@ -77,6 +77,14 @@ import { ShareDialog } from "@/components/modals/ShareDialog";
 import { BakongPaymentDialog } from "@/components/modals/BakongPaymentDialog";
 import { useWebHaptics } from "web-haptics/react";
 
+type NearbyHotel = {
+  id: string;
+  name: string;
+  rating: number | null;
+  price: string | null;
+  url: string | null;
+};
+
 // Inner component that safely uses hooks and receives expanded state
 function CardInner({
   isExpanded,
@@ -85,7 +93,7 @@ function CardInner({
   isExpanded: boolean;
   toggleExpand: () => void;
 }) {
-  const { isPanelOpen, activeTab, setActiveTab } = useUIStore();
+  const { isPanelOpen, activeTab, setActiveTab, language } = useUIStore();
   const { selectedPlaceId } = useMapStore();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
@@ -97,6 +105,7 @@ function CardInner({
   const [isPromoteOpen, setIsPromoteOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [redirectHotelUrl, setRedirectHotelUrl] = useState<string | null>(null);
   const [windowSize, setWindowSize] = useState({
     width: typeof window !== "undefined" ? window.innerWidth : 1200,
     height: typeof window !== "undefined" ? window.innerHeight : 800,
@@ -117,9 +126,18 @@ function CardInner({
   });
   const [reviewData, setReviewData] = useState({ rating: 5, comment: "" });
 
-  function ReviewItem({ review }: { review: any }) {
+  const t = (en: string, kh: string) => (language === "KH" ? kh : en);
+
+  function ReviewItem({
+    review,
+    translatedComment,
+  }: {
+    review: any;
+    translatedComment?: string | null;
+  }) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const isLong = review.comment?.length > 150;
+    const displayComment = translatedComment ?? review.comment;
+    const isLong = displayComment?.length > 150;
 
     return (
       <div className="space-y-2.5 pb-4 border-b border-zinc-100 dark:border-zinc-800 last:border-0 last:pb-0">
@@ -141,7 +159,9 @@ function CardInner({
                 {review.user?.name || "Lomhea Traveler"}
               </span>
               <span className="text-[10px] text-zinc-400 font-medium">
-                {new Date(review.createdAt).toLocaleDateString()}
+                {new Date(review.createdAt).toLocaleDateString(
+                  language === "KH" ? "km-KH" : "en-US",
+                )}
               </span>
             </div>
           </div>
@@ -166,14 +186,16 @@ function CardInner({
               !isExpanded && "line-clamp-3",
             )}
           >
-            {review.comment}
+            {displayComment}
           </p>
           {isLong && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-[10px] font-black uppercase tracking-widest text-primary mt-2 hover:underline"
             >
-              {isExpanded ? "Show Less" : "View More"}
+              {isExpanded
+                ? t("Show Less", "បង្ហាញតិច")
+                : t("View More", "បង្ហាញបន្ថែម")}
             </button>
           )}
         </div>
@@ -190,7 +212,11 @@ function CardInner({
     }
   }, [isExpanded]);
 
-  const { data: place } = useQuery<Place>({
+  const {
+    data: place,
+    isError: isPlaceError,
+    error: placeError,
+  } = useQuery<Place>({
     queryKey: ["place", selectedPlaceId],
     queryFn: async () => {
       const res = await fetch(`/api/places/${selectedPlaceId}`, {
@@ -200,6 +226,104 @@ function CardInner({
       return res.json();
     },
     enabled: !!selectedPlaceId && isPanelOpen,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (isPlaceError) {
+      toast.error(t("Failed to load place details", "មិនអាចផ្ទុកព័ត៌មានទីកន្លែងបានទេ"));
+      console.error(placeError);
+    }
+  }, [isPlaceError, placeError]);
+
+  const displayPlaceName =
+    language === "KH" && place?.nameKh ? place.nameKh : place?.name;
+
+  const translatableTexts = [
+    place?.description || "",
+    ...((place?.reviews || []).map((r: any) => r.comment || "")),
+  ];
+
+  const { data: translatedTexts = [] } = useQuery<string[]>({
+    queryKey: [
+      "place-kh-translation",
+      place?.id,
+      (place as any)?.updatedAt,
+      translatableTexts,
+    ],
+    queryFn: async () => {
+      const texts = translatableTexts.filter((txt) => txt.trim().length > 0);
+      if (!texts.length) return [];
+
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "en",
+          target: "km",
+          texts,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to translate");
+      const data = await res.json();
+      return Array.isArray(data.translations) ? data.translations : [];
+    },
+    enabled: language === "KH" && !!place,
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 6,
+    retry: 1,
+  });
+
+  const translatedDescription =
+    language === "KH"
+      ? translatedTexts[0] || place?.description || t("No description available.", "មិនមានការពិពណ៌នា")
+      : place?.description || t("No description available.", "មិនមានការពិពណ៌នា");
+
+  const reviewCommentMap = (() => {
+    const map = new Map<string, string>();
+    if (language !== "KH" || !place?.reviews?.length) return map;
+    let idx = 1; // 0 is description
+    for (const review of place.reviews as any[]) {
+      if (review.comment && translatedTexts[idx]) {
+        map.set(review.id, translatedTexts[idx]);
+      }
+      if (review.comment) idx += 1;
+    }
+    return map;
+  })();
+
+  const { data: hotelData } = useQuery<{
+    hotels: NearbyHotel[];
+    source?: string;
+  }>({
+    queryKey: [
+      "nearby-hotels",
+      place?.id,
+      place?.lat,
+      place?.lng,
+      (place as any)?.updatedAt,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        lat: String(place?.lat || ""),
+        lng: String(place?.lng || ""),
+        name: place?.name || "",
+        province: place?.province || "",
+      });
+      const res = await fetch(`/api/hotels/nearby?${params.toString()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Failed to fetch hotels");
+      return res.json();
+    },
+    enabled: !!place?.lat && !!place?.lng,
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    retry: 1,
   });
 
   const { data: favorites = [] } = useQuery<string[]>({
@@ -416,7 +540,7 @@ function CardInner({
                   {place ? (
                     <Image
                       src={place.images[0] || "/placeholder.jpg"}
-                      alt={place.name}
+                      alt={displayPlaceName || place.name}
                       fill
                       className="object-cover"
                     />
@@ -436,7 +560,7 @@ function CardInner({
                         </Badge>
                         {place.isFeatured && (
                           <Badge className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-px rounded-md bg-amber-100 text-amber-700 border-0">
-                            Featured
+                            {t("Featured", "លេចធ្លោ")}
                           </Badge>
                         )}
                         <span className="flex items-center gap-0.5 text-amber-500 text-[11px] font-bold ml-auto pr-6">
@@ -445,7 +569,7 @@ function CardInner({
                         </span>
                       </div>
                       <h3 className="font-bold text-sm text-zinc-900 dark:text-white truncate">
-                        {place.name}
+                        {displayPlaceName}
                       </h3>
                       <div className="flex items-center gap-1 text-zinc-400 text-[11px] mt-0.5">
                         <MapPin size={10} className="text-primary shrink-0" />
@@ -471,7 +595,7 @@ function CardInner({
                 {place ? (
                   <Image
                     src={place.images[0] || "/placeholder.jpg"}
-                    alt={place.name}
+                    alt={displayPlaceName || place.name}
                     fill
                     className="object-cover"
                     priority
@@ -621,12 +745,12 @@ function CardInner({
                         </Badge>
                         {place?.isFeatured && (
                           <Badge className="bg-amber-400/85 text-amber-950 border-amber-200 text-[9px] font-bold uppercase tracking-wider">
-                            Featured
+                            {t("Featured", "លេចធ្លោ")}
                           </Badge>
                         )}
                       </div>
                       <h2 className="text-xl font-bold text-white leading-tight drop-shadow">
-                        {place?.name}
+                        {displayPlaceName}
                       </h2>
                       <div className="flex items-center gap-1 text-white/70 text-[11px] mt-0.5">
                         <MapPin size={10} />
@@ -721,7 +845,7 @@ function CardInner({
                               className="rounded-lg text-[11px] font-semibold flex items-center gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm"
                             >
                               <Star size={11} />
-                              Reviews
+                              {t("Reviews", "មតិយោបល់")}
                             </TabsTrigger>
                           </TabsList>
                         </div>
@@ -733,8 +857,7 @@ function CardInner({
                             className="mt-0 px-4 pb-4 space-y-4 outline-none"
                           >
                             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                              {place?.description ||
-                                "No description available."}
+                              {translatedDescription}
                             </p>
                             {(place?.images?.length ?? 0) > 1 && (
                               <>
@@ -809,92 +932,50 @@ function CardInner({
                               </div>
                             ) : null}
 
-                            {/* External Booking Partners */}
                             <div className="space-y-3">
                               <div className="flex items-center gap-2">
                                 <Separator className="flex-1" />
                                 <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest whitespace-nowrap">
-                                  Find Stays Nearby
+                                  {t("Nearby Hotels", "សណ្ឋាគារនៅជិត")}
                                 </span>
                                 <Separator className="flex-1" />
                               </div>
 
-                              <div className="grid grid-cols-1 gap-2">
-                                <a
-                                  href={`https://www.agoda.com/search?city=${encodeURIComponent(place?.name + " " + place?.province)}&cid=1844104`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all group"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center text-[10px] font-black text-white">
-                                      ag
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                                        Search on Agoda
-                                      </span>
-                                      <span className="text-[10px] text-zinc-400 font-medium">
-                                        Best rates for Cambodia
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <ExternalLink
-                                    size={14}
-                                    className="text-zinc-300 group-hover:text-primary transition-colors"
-                                  />
-                                </a>
-
-                                <a
-                                  href={`https://www.trip.com/hotels/list?keyword=${encodeURIComponent(place?.name + " " + place?.province)}&locale=en-XX`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">
-                                      tp
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                                        Search on Trip.com
-                                      </span>
-                                      <span className="text-[10px] text-zinc-400 font-medium">
-                                        Global hotel inventory
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <ExternalLink
-                                    size={14}
-                                    className="text-zinc-300 group-hover:text-blue-500 transition-colors"
-                                  />
-                                </a>
-
-                                <a
-                                  href={`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(place?.name + " " + place?.province)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-blue-800 hover:shadow-lg hover:shadow-blue-800/5 transition-all group"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-800 flex items-center justify-center text-[10px] font-black text-white">
-                                      bk
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="text-sm font-bold text-zinc-900 dark:text-white">
-                                        Search on Booking.com
-                                      </span>
-                                      <span className="text-[10px] text-zinc-400 font-medium">
-                                        Verified guest reviews
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <ExternalLink
-                                    size={14}
-                                    className="text-zinc-300 group-hover:text-blue-800 transition-colors"
-                                  />
-                                </a>
-                              </div>
+                              {hotelData?.hotels?.length ? (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {hotelData.hotels.slice(0, 8).map((hotel) => (
+                                    <button
+                                      key={hotel.id}
+                                      type="button"
+                                      onClick={() => {
+                                        if (hotel.url) setRedirectHotelUrl(hotel.url);
+                                      }}
+                                      className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all group text-left"
+                                    >
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                                          {hotel.name}
+                                        </span>
+                                        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                                          {t("Price", "តម្លៃ")}: {hotel.price || "N/A"} • {t("Rating", "ពិន្ទុ")}:{" "}
+                                          {hotel.rating ? `${hotel.rating.toFixed(1)}★` : "N/A"}
+                                        </span>
+                                      </div>
+                                      <ExternalLink
+                                        size={14}
+                                        className="text-zinc-300 group-hover:text-primary transition-colors shrink-0"
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-zinc-500 dark:text-zinc-400 px-1 py-2">
+                                  {t(
+                                    "No hotel data available yet for this area.",
+                                    "មិនទាន់មានទិន្នន័យសណ្ឋាគារសម្រាប់តំបន់នេះ។",
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </TabsContent>
 
@@ -943,7 +1024,13 @@ function CardInner({
                             {place?.reviews?.length ? (
                               <div className="space-y-4">
                                 {place.reviews.map((review: any) => (
-                                  <ReviewItem key={review.id} review={review} />
+                                  <ReviewItem
+                                    key={review.id}
+                                    review={review}
+                                    translatedComment={reviewCommentMap.get(
+                                      review.id,
+                                    )}
+                                  />
                                 ))}
                               </div>
                             ) : (
@@ -951,10 +1038,13 @@ function CardInner({
                                 <Star size={32} strokeWidth={1} />
                                 <div className="text-center">
                                   <p className="text-sm font-bold text-zinc-500">
-                                    No reviews yet
+                                    {t("No reviews yet", "មិនទាន់មានមតិយោបល់")}
                                   </p>
                                   <p className="text-[10px] uppercase font-black tracking-widest mt-1 opacity-50">
-                                    Be the first to share your journey
+                                    {t(
+                                      "Be the first to share your journey",
+                                      "ចែករំលែកបទពិសោធន៍របស់អ្នកមុនគេ",
+                                    )}
                                   </p>
                                 </div>
                               </div>
@@ -978,7 +1068,7 @@ function CardInner({
                             }}
                           >
                             <Share2 size={13} />
-                            Share
+                            {t("Share", "ចែករំលែក")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -992,7 +1082,7 @@ function CardInner({
                               rel="noopener noreferrer"
                             >
                               <Navigation size={13} />
-                              Directions
+                              {t("Directions", "ផ្លូវទៅទីតាំង")}
                             </a>
                           </Button>
                         </div>
@@ -1011,7 +1101,7 @@ function CardInner({
                               }}
                             >
                               <Sparkles size={13} className="mr-1.5" />
-                              Promote This Place
+                              {t("Promote This Place", "ផ្សព្វផ្សាយទីកន្លែងនេះ")}
                             </Button>
                           )}
 
@@ -1031,7 +1121,7 @@ function CardInner({
                                   }
                                 }}
                               >
-                                Write a Review
+                                {t("Write a Review", "សរសេរមតិយោបល់")}
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="rounded-3xl max-w-[400px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
@@ -1041,10 +1131,13 @@ function CardInner({
                                     className="text-amber-500 fill-amber-500"
                                     size={20}
                                   />
-                                  Rate Experience
+                                  {t("Rate Experience", "វាយតម្លៃបទពិសោធន៍")}
                                 </DialogTitle>
                                 <DialogDescription className="font-medium text-zinc-500">
-                                  Share your thoughts with the community.
+                                  {t(
+                                    "Share your thoughts with the community.",
+                                    "ចែករំលែកមតិយោបល់របស់អ្នកជាមួយសហគមន៍។",
+                                  )}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-6 py-4 text-center">
@@ -1074,10 +1167,13 @@ function CardInner({
                                 </div>
                                 <div className="space-y-2 text-left">
                                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                    Share your story
+                                    {t("Share your story", "ចែករំលែករឿងរ៉ាវរបស់អ្នក")}
                                   </Label>
                                   <Textarea
-                                    placeholder="What did you love about this place?"
+                                    placeholder={t(
+                                      "What did you love about this place?",
+                                      "តើអ្នកចូលចិត្តអ្វីខ្លះនៅទីកន្លែងនេះ?",
+                                    )}
                                     className="rounded-2xl resize-none h-32 bg-zinc-50 border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-700"
                                     value={reviewData.comment}
                                     onChange={(e) =>
@@ -1103,7 +1199,7 @@ function CardInner({
                                       size={16}
                                     />
                                   ) : (
-                                    "Publish Review"
+                                    t("Publish Review", "បោះផ្សាយមតិយោបល់")
                                   )}
                                 </Button>
                               </DialogFooter>
@@ -1119,6 +1215,40 @@ function CardInner({
           )}
         </div>
       </ExpandableCard>
+
+      <AlertDialog
+        open={Boolean(redirectHotelUrl)}
+        onOpenChange={(open) => {
+          if (!open) setRedirectHotelUrl(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("Leaving Lomhea", "អ្នកកំពុងចាកចេញពី Lomhea")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "We will redirect you to an external hotel website.",
+                "យើងនឹងបញ្ជូនអ្នកទៅកាន់គេហទំព័រសណ្ឋាគារខាងក្រៅ។",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Cancel", "បោះបង់")}</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <a
+                href={redirectHotelUrl || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setRedirectHotelUrl(null)}
+              >
+                {t("Continue", "បន្ត")}
+              </a>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showLoginAlert} onOpenChange={setShowLoginAlert}>
         <AlertDialogContent className="rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl">
@@ -1154,14 +1284,14 @@ function CardInner({
       {place && (
         <>
           <ShareDialog
-            placeName={place.name}
+            placeName={displayPlaceName || place.name}
             placeId={place.id}
             open={isShareOpen}
             onOpenChange={setIsShareOpen}
           />
           <BakongPaymentDialog
             placeId={place.id}
-            placeName={place.name}
+            placeName={displayPlaceName || place.name}
             isOpen={isPromoteOpen}
             onClose={() => setIsPromoteOpen(false)}
           />
