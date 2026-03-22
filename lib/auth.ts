@@ -2,6 +2,8 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { prisma } from "@/lib/db";
 import { Resend } from "resend";
+import { redisStorage } from "@better-auth/redis-storage";
+import { redis } from "./redis";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
@@ -10,6 +12,22 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  secondaryStorage: {
+    get: async (key: string) => {
+      const value = await redis.get(key);
+      return value ? JSON.stringify(value) : null;
+    },
+    set: async (key: string, value: string, ttl?: number) => {
+      if (ttl) {
+        await redis.set(key, value, { ex: ttl });
+      } else {
+        await redis.set(key, value);
+      }
+    },
+    delete: async (key: string) => {
+      await redis.del(key);
+    },
+  },
   baseURL:
     process.env.BETTER_AUTH_URL ||
     (process.env.VERCEL_URL

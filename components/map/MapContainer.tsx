@@ -109,7 +109,6 @@ export function MapContainer() {
       const isLatValid = p.lat >= -90 && p.lat <= 90;
       const isLngValid = p.lng >= -180 && p.lng <= 180;
       if (!isLatValid || !isLngValid) {
-        console.error(`Invalid coordinates for place: ${p.name}`, p.lat, p.lng);
         return false;
       }
       return true;

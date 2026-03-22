@@ -3,35 +3,44 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/lib/pusher";
+import { getOrSetCache, invalidatePattern } from "@/lib/redis-utils";
+import { placeSchema } from "@/lib/validation";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
 
   try {
-    // Optimization: Only select what's needed for the map pins/cards
-    // This reduces the payload and database stress massively compared to fetching everything
-    const places = await prisma.place.findMany({
-      where: category && category !== "All" ? { category } : {},
-      select: {
-        id: true,
-        name: true,
-        nameKh: true,
-        lat: true,
-        lng: true,
-        category: true,
-        province: true,
-        images: true, // Needed for simple thumbnails
-        rating: true,
-        reviewCount: true,
-        isVerified: true,
+    const cacheKey = `places:${category || "All"}`;
+
+    const places = await getOrSetCache(
+      cacheKey,
+      async () => {
+        // Optimization: Only select what's needed for the map pins/cards
+        return await prisma.place.findMany({
+          where: category && category !== "All" ? { category } : {},
+          select: {
+            id: true,
+            name: true,
+            nameKh: true,
+            lat: true,
+            lng: true,
+            category: true,
+            province: true,
+            images: true,
+            rating: true,
+            reviewCount: true,
+            isVerified: true,
+          },
+          orderBy: { createdAt: "desc" },
+        });
       },
-      orderBy: { createdAt: "desc" },
-    });
+      600,
+    ); // Cache for 10 minutes
 
     return NextResponse.json(places, {
       headers: {
-        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=50",
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {
@@ -54,22 +63,28 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+
+    // Validate and sanitize input
+    const validatedData = placeSchema.parse(body);
     const { name, nameKh, description, lat, lng, category, province, images } =
-      body;
+      validatedData;
 
     const place = await prisma.place.create({
       data: {
         name,
         nameKh,
         description,
-        lat: parseFloat(lat),
-        lng: parseFloat(lng),
+        lat,
+        lng,
         category,
         province,
         images: images || [],
         isVerified: true,
       },
     });
+
+    // Invalidate all places cache
+    await invalidatePattern("places:*");
 
     await pusherServer.trigger("places", "places-updated", {});
     return NextResponse.json(place);
