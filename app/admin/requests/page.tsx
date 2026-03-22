@@ -215,7 +215,7 @@ export default function AdminRequestsPage() {
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-zinc-800/50">
-                          <DialogHeader className="p-4 sm:p-6 border-b">
+                          <DialogHeader className="p-4 sm:p-6 mb-4">
                             <div className="flex items-center gap-2 mb-1">
                               <Badge
                                 variant="secondary"
@@ -263,7 +263,7 @@ export default function AdminRequestsPage() {
                                   href={request.googleMapUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-3 rounded-md border bg-muted/50 hover:bg-muted transition-colors"
+                                  className="flex items-center justify-between p-3 rounded-md bg-muted/50 hover:bg-muted transition-colors"
                                 >
                                   <div className="flex items-center gap-2 text-sm font-medium truncate max-w-[400px]">
                                     <MapPin
@@ -303,7 +303,7 @@ export default function AdminRequestsPage() {
                                   )}
                                   {(!request.images ||
                                     request.images.length === 0) && (
-                                    <div className="col-span-3 text-center py-8 border border-dashed rounded text-sm text-muted-foreground">
+                                    <div className="col-span-3 text-center py-8 border-dashed rounded text-sm text-muted-foreground">
                                       No photos provided
                                     </div>
                                   )}
@@ -315,7 +315,7 @@ export default function AdminRequestsPage() {
                                 <label className="text-[10px] font-semibold text-muted-foreground uppercase">
                                   Description
                                 </label>
-                                <div className="p-4 rounded-md border text-sm text-muted-foreground leading-relaxed">
+                                <div className="p-4 rounded-md text-sm text-muted-foreground leading-relaxed bg-muted/20">
                                   {request.description}
                                 </div>
                               </div>
@@ -325,12 +325,10 @@ export default function AdminRequestsPage() {
                                 <label className="text-[10px] font-semibold text-muted-foreground uppercase">
                                   Submitter's Rationale
                                 </label>
-                                <div className="p-4 rounded-md bg-muted/50 border italic text-sm text-muted-foreground">
+                                <div className="p-4 rounded-md bg-muted/50 italic text-sm text-muted-foreground">
                                   "{request.reason || "No reason provided."}"
                                 </div>
                               </div>
-
-                              <Separator />
 
                               {/* Session Context */}
                               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -354,7 +352,7 @@ export default function AdminRequestsPage() {
                           </ScrollArea>
 
                           {request.status === "PENDING" && (
-                            <DialogFooter className="p-6 border-t bg-muted/20 flex-row gap-2">
+                            <DialogFooter className="p-6 bg-muted/20 flex-row gap-2">
                               <Dialog
                                 open={isRejectDialogOpen}
                                 onOpenChange={setIsRejectDialogOpen}
