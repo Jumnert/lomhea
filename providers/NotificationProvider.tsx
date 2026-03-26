@@ -31,12 +31,18 @@ export function NotificationProvider({
 
   const registerServiceWorker = async () => {
     try {
+      if (!("Notification" in window)) return;
+
       const registration = await navigator.serviceWorker.register("/sw.js");
       console.log("Service Worker registered");
 
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
+        if (Notification.permission !== "granted") {
+          return;
+        }
+
         const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!publicVapidKey) return;
 
@@ -56,6 +62,10 @@ export function NotificationProvider({
         headers: { "Content-Type": "application/json" },
       });
     } catch (error) {
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        return;
+      }
+
       console.error("Failed to register Service Worker:", error);
     }
   };

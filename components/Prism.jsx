@@ -18,7 +18,10 @@ const Prism = ({
   inertia = 0.05,
   bloom = 1,
   suspendWhenOffscreen = false,
-  timeScale = 0.5
+  timeScale = 0.5,
+  maxDpr = 1,
+  targetFps = 30,
+  quality = 'medium'
 }) => {
   const containerRef = useRef(null);
 
@@ -45,8 +48,12 @@ const Prism = ({
     const TS = Math.max(0, timeScale || 1);
     const HOVSTR = Math.max(0, hoverStrength || 1);
     const INERT = Math.max(0, Math.min(1, inertia || 0.12));
+    const DPR = Math.max(0.5, Math.min(maxDpr || 1, 2));
+    const FRAME_INTERVAL = targetFps > 0 ? 1000 / targetFps : 0;
+    const STEP_COUNT =
+      quality === 'low' ? 56 : quality === 'high' ? 100 : 72;
 
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(DPR, window.devicePixelRatio || 1);
     const renderer = new Renderer({
       dpr,
       alpha: transparent,
@@ -189,7 +196,7 @@ const Prism = ({
           wob = mat2(c0, c1, c2, c0);
         }
 
-        const int STEPS = 100;
+        const int STEPS = ${STEP_COUNT};
         for (int i = 0; i < STEPS; i++) {
           p = vec3(f, z);
           p.xz = p.xz * wob;
@@ -307,6 +314,7 @@ const Prism = ({
     const NOISE_IS_ZERO = NOISE < 1e-6;
     let raf = 0;
     const t0 = performance.now();
+    let lastFrameTime = 0;
     const startRAF = () => {
       if (raf) return;
       raf = requestAnimationFrame(render);
@@ -367,6 +375,12 @@ const Prism = ({
     }
 
     const render = t => {
+      if (FRAME_INTERVAL > 0 && t - lastFrameTime < FRAME_INTERVAL) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
+      lastFrameTime = t;
+
       const time = (t - t0) * 0.001;
       program.uniforms.iTime.value = time;
 
@@ -435,6 +449,7 @@ const Prism = ({
     return () => {
       stopRAF();
       ro.disconnect();
+      lastFrameTime = 0;
       if (animationType === 'hover') {
         if (onPointerMove) window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('mouseleave', onLeave);
@@ -464,7 +479,10 @@ const Prism = ({
     hoverStrength,
     inertia,
     bloom,
-    suspendWhenOffscreen
+    suspendWhenOffscreen,
+    maxDpr,
+    quality,
+    targetFps
   ]);
 
   return <div className={styles.prismContainer} ref={containerRef} />;

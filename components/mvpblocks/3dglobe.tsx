@@ -2,8 +2,6 @@
 
 import { motion } from "framer-motion";
 import Prism from "@/components/Prism";
-import { MorphingText } from "@/components/ui/morphing-text";
-import { ShineBorder } from "@/components/ui/shine-border";
 
 export default function Globe3D() {
   return (
@@ -18,12 +16,16 @@ export default function Globe3D() {
         <Prism
           animationType="rotate"
           palette="cambodia"
-          glow={1.2}
-          noise={0.06}
-          scale={2.8}
-          colorFrequency={1}
-          bloom={1.05}
-          timeScale={0.8}
+          glow={0.9}
+          noise={0.02}
+          scale={2.4}
+          colorFrequency={0.9}
+          bloom={0.9}
+          timeScale={0.45}
+          suspendWhenOffscreen={true}
+          maxDpr={1}
+          targetFps={30}
+          quality="medium"
         />
       </div>
 
@@ -38,15 +40,9 @@ export default function Globe3D() {
             <h1 className="text-4xl font-black md:text-5xl lg:text-6xl">
               Explore
             </h1>
-            <MorphingText
-              texts={[
-                "Cambodia",
-                "Temple Trails",
-                "Island Sunsets",
-                "Hidden Gems",
-              ]}
-              className="mx-auto mt-1 h-12 md:h-14 lg:h-16 max-w-5xl text-center text-4xl font-black md:text-5xl lg:text-6xl [&>span]:left-0 [&>span]:text-center"
-            />
+            <h1 className="mt-1 text-center text-4xl font-black md:text-5xl lg:text-6xl">
+              Cambodia
+            </h1>
             <h1 className="mt-1 text-4xl font-black md:text-5xl lg:text-6xl">
               like never before
             </h1>
@@ -64,12 +60,7 @@ export default function Globe3D() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
         >
-            <div className="relative z-10 mx-auto max-w-[90vw] lg:max-w-7xl overflow-hidden rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] border border-white/40">
-              <ShineBorder
-                borderWidth={4}
-                duration={20}
-                shineColor={["#be185d", "#db2777", "#f9a8d4", "#ddd6fe"]}
-              />
+          <div className="relative z-10 mx-auto max-w-[90vw] overflow-hidden rounded-[40px] border border-white/40 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] lg:max-w-7xl">
             <img
               src="/heroImg/whitevarient.png"
               alt="Lomhea Dashboard Preview"
@@ -77,6 +68,7 @@ export default function Globe3D() {
               height={1080}
               className="h-auto w-full object-cover"
             />
+            <div className="pointer-events-none absolute inset-0 rounded-[40px] ring-1 ring-white/30" />
           </div>
         </motion.div>
       </div>

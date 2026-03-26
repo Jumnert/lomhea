@@ -1,190 +1,435 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Navbar } from "@/components/layout/Navbar";
-import { Place } from "@/types/app";
+import { useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  Heart,
-  MapPin,
-  Star,
+  ArrowLeft,
   ArrowRight,
   Compass,
+  Heart,
   Loader2,
-  Trash2,
+  MapPin,
+  Star,
 } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
+import { Navbar } from "@/components/layout/Navbar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/lib/auth-client";
-import { useUIStore } from "@/stores/uiStore";
 import { useMapStore } from "@/stores/mapStore";
-import { useRouter } from "next/navigation";
+import { useUIStore } from "@/stores/uiStore";
+import { Place } from "@/types/app";
+
+type FavoritesTab = "all" | "featured" | "topRated";
+
+function FavoritesGrid({
+  places,
+  onOpenMap,
+  onRemove,
+  removingId,
+}: {
+  places: Place[];
+  onOpenMap: (placeId: string) => void;
+  onRemove: (placeId: string) => void;
+  removingId?: string;
+}) {
+  if (places.length === 0) {
+    return (
+      <Card className="rounded-3xl border-dashed py-0">
+        <CardContent className="flex min-h-72 flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="mb-4 rounded-full border bg-muted p-4">
+            <Heart className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <CardTitle className="text-2xl">Nothing in this view yet</CardTitle>
+          <CardDescription className="mt-2 max-w-md text-sm leading-6">
+            Try another tab or save more places from the map to build your own
+            Cambodia shortlist.
+          </CardDescription>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {places.map((place) => {
+        const isRemoving = removingId === place.id;
+
+        return (
+          <Card key={place.id} className="overflow-hidden rounded-3xl py-0">
+            <div className="relative h-56 overflow-hidden">
+              <Image
+                src={place.images[0] || "/placeholder-place.jpg"}
+                alt={place.name}
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                <Badge variant="secondary" className="rounded-full">
+                  {place.category}
+                </Badge>
+                {place.isFeatured ? (
+                  <Badge className="rounded-full bg-amber-400 text-stone-950 hover:bg-amber-400">
+                    Featured
+                  </Badge>
+                ) : null}
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <p className="mb-1 flex items-center gap-1 text-sm text-amber-300">
+                  <Star className="h-4 w-4 fill-current" />
+                  {place.rating.toFixed(1)}
+                  <span className="text-white/70">({place.reviewCount})</span>
+                </p>
+                <h3 className="text-2xl font-semibold">{place.name}</h3>
+                <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
+                  <MapPin className="h-4 w-4" />
+                  {place.province}
+                </p>
+              </div>
+            </div>
+
+            <CardHeader className="gap-3">
+              <CardTitle className="text-lg leading-tight">
+                {place.nameKh || place.name}
+              </CardTitle>
+              <CardDescription className="line-clamp-3 text-sm leading-6">
+                {place.description ||
+                  "Saved for your next route through Cambodia."}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border bg-muted/40 p-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    Province
+                  </p>
+                  <p className="mt-1 text-sm font-semibold">{place.province}</p>
+                </div>
+                <div className="rounded-2xl border bg-muted/40 p-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    Reviews
+                  </p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {place.reviewCount}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+
+            <Separator />
+
+            <CardFooter className="flex gap-3 px-6 py-5">
+              <Button className="flex-1 rounded-2xl" onClick={() => onOpenMap(place.id)}>
+                View on map
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-2xl"
+                disabled={isRemoving}
+                onClick={() => onRemove(place.id)}
+              >
+                {isRemoving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Heart className="mr-2 h-4 w-4 fill-current" />
+                )}
+                Remove
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function FavoritesPage() {
   const { data: session, isPending: sessionPending } = useSession();
   const { setSelectedPlaceId } = useMapStore();
   const { setPanelOpen } = useUIStore();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const { data: favoritedPlaces, isLoading } = useQuery<Place[]>({
+  const { data: favoritedPlaces = [], isLoading } = useQuery<Place[]>({
     queryKey: ["favorited-places"],
     queryFn: async () => {
-      // First get IDs
-      const favRes = await fetch("/api/favorites");
-      if (!favRes.ok) return [];
-      const favIds: string[] = await favRes.json();
+      const favoritesResponse = await fetch("/api/favorites");
+      if (!favoritesResponse.ok) return [];
 
-      if (favIds.length === 0) return [];
+      const favoriteIds: string[] = await favoritesResponse.json();
+      if (favoriteIds.length === 0) return [];
 
-      // Then get full details (In a real app, we might have an API for multiple IDs)
-      const placesRes = await fetch("/api/places");
-      if (!placesRes.ok) return [];
-      const allPlaces: Place[] = await placesRes.json();
+      const placesResponse = await fetch("/api/places");
+      if (!placesResponse.ok) return [];
 
-      return allPlaces.filter((p) => favIds.includes(p.id));
+      const allPlaces: Place[] = await placesResponse.json();
+      return allPlaces.filter((place) => favoriteIds.includes(place.id));
     },
     enabled: !!session,
   });
 
-  const handleViewOnMap = (placeId: string) => {
+  const removeFavorite = useMutation({
+    mutationFn: async (placeId: string) => {
+      const response = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placeId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update favorites");
+      }
+
+      return response.json() as Promise<{ favorited: boolean }>;
+    },
+    onMutate: async (placeId) => {
+      await queryClient.cancelQueries({ queryKey: ["favorited-places"] });
+      const previousPlaces =
+        queryClient.getQueryData<Place[]>(["favorited-places"]) ?? [];
+
+      queryClient.setQueryData<Place[]>(["favorited-places"], (current = []) =>
+        current.filter((place) => place.id !== placeId),
+      );
+
+      return { previousPlaces };
+    },
+    onError: (_error, _placeId, context) => {
+      if (context?.previousPlaces) {
+        queryClient.setQueryData(["favorited-places"], context.previousPlaces);
+      }
+      toast.error("Could not remove this place from favorites.");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast.success("Removed from favorites.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorited-places"] });
+    },
+  });
+
+  const handleOpenMap = (placeId: string) => {
     setSelectedPlaceId(placeId);
     setPanelOpen(true);
     router.push("/");
   };
 
+  const averageRating = useMemo(() => {
+    if (favoritedPlaces.length === 0) return "0.0";
+    const total = favoritedPlaces.reduce(
+      (sum, place) => sum + (place.rating || 0),
+      0,
+    );
+    return (total / favoritedPlaces.length).toFixed(1);
+  }, [favoritedPlaces]);
+
+  const featuredPlaces = useMemo(
+    () => favoritedPlaces.filter((place) => place.isFeatured),
+    [favoritedPlaces],
+  );
+
+  const topRatedPlaces = useMemo(
+    () => favoritedPlaces.filter((place) => place.rating >= 4.5),
+    [favoritedPlaces],
+  );
+
+  const tabData: Record<FavoritesTab, Place[]> = {
+    all: favoritedPlaces,
+    featured: featuredPlaces,
+    topRated: topRatedPlaces,
+  };
+
   if (sessionPending || isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-        <p className="font-bold text-zinc-400">Loading your favorites...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground">
+          Loading your favorites...
+        </p>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-zinc-100 flex items-center justify-center mb-6">
-          <Heart size={40} className="text-zinc-300" />
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Login Required</h1>
-        <p className="text-zinc-500 mb-8 max-w-sm">
-          Please sign in to view and manage your favorite places in Cambodia.
-        </p>
-        <Button asChild className="h-12 px-8 rounded-2xl font-bold shadow-xl">
-          <Link href="/login">Go to Login</Link>
-        </Button>
+      <div className="min-h-screen w-full bg-background">
+        <Navbar />
+        <main className="mx-auto flex w-full max-w-5xl px-6 pt-28 pb-16">
+          <Card className="w-full rounded-3xl">
+            <CardHeader className="space-y-4">
+              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1">
+                Favorites
+              </Badge>
+              <CardTitle className="text-4xl tracking-tight">
+                Sign in to see your saved places
+              </CardTitle>
+              <CardDescription className="max-w-2xl text-base leading-7">
+                Build your own Cambodia shortlist, reopen places from the map,
+                and keep everything in one neat collection.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <Card className="rounded-2xl border bg-muted/40 py-4 shadow-none">
+                <CardContent className="px-5">
+                  <p className="text-sm font-semibold">Save temples and beaches</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-2xl border bg-muted/40 py-4 shadow-none">
+                <CardContent className="px-5">
+                  <p className="text-sm font-semibold">Jump back into the map fast</p>
+                </CardContent>
+              </Card>
+              <Card className="rounded-2xl border bg-muted/40 py-4 shadow-none">
+                <CardContent className="px-5">
+                  <p className="text-sm font-semibold">Keep your trip plans organized</p>
+                </CardContent>
+              </Card>
+            </CardContent>
+            <CardFooter className="px-6 pb-6">
+              <Button asChild className="rounded-2xl">
+                <Link href="/login">Go to login</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
+    <div className="min-h-screen w-full bg-background pb-16">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 pt-32">
-        <header className="mb-12">
-          <div className="flex items-center gap-3 text-rose-500 mb-2">
-            <Heart size={24} className="fill-current" />
-            <span className="font-bold uppercase tracking-widest text-xs">
-              My Collection
-            </span>
-          </div>
-          <h1 className="text-4xl font-extrabold tracking-tight">
-            Saved Favorites
-          </h1>
-          <p className="text-zinc-500 mt-2 text-lg">
-            Your personal list of the best of Cambodia.
-          </p>
-        </header>
+      <main className="mx-auto w-full max-w-7xl px-6 pt-28">
+        <div className="mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-2xl shadow-sm"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        </div>
 
-        {favoritedPlaces?.length === 0 ? (
-          <Card className="border-none shadow-xl shadow-zinc-200/50 dark:shadow-none rounded-3xl p-12 text-center">
-            <div className="mx-auto w-24 h-24 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-6">
-              <Compass size={40} className="text-zinc-300" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">No favorites yet</h3>
-            <p className="text-zinc-500 mb-8 max-w-sm mx-auto">
-              Explore the map and heart your favorite places to keep them safe
-              here.
-            </p>
-            <Button
-              asChild
-              variant="outline"
-              className="h-12 px-8 rounded-2xl border-zinc-200 font-bold"
-            >
-              <Link href="/">Explore the Map</Link>
-            </Button>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {favoritedPlaces?.map((place) => (
-              <Card
-                key={place.id}
-                className="group relative border-none shadow-xl shadow-zinc-200/50 dark:shadow-none rounded-3xl overflow-hidden hover:scale-[1.02] transition-all"
+        <div className="grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
+          <Card className="rounded-3xl shadow-[0_18px_45px_-24px_rgba(15,23,42,0.22)]">
+            <CardHeader className="space-y-4">
+              <Badge variant="secondary" className="w-fit rounded-full px-3 py-1">
+                My favorites
+              </Badge>
+              <div className="space-y-2">
+                <CardTitle className="text-4xl tracking-tight">
+                  Saved places across Cambodia
+                </CardTitle>
+                <CardDescription className="max-w-2xl text-base leading-7">
+                  A simpler list of the places you want to revisit, compare, or
+                  reopen on the map later.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardFooter className="flex flex-wrap gap-3 px-6 pb-6">
+              <Button asChild className="rounded-2xl">
+                <Link href="/">Explore more places</Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-2xl"
+                onClick={() => router.push("/contribute")}
               >
-                <div className="relative h-64">
-                  <Image
-                    src={place.images[0] || "/placeholder-place.jpg"}
-                    alt={place.name}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
+                Contribute a place
+              </Button>
+            </CardFooter>
+          </Card>
 
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20">
-                      {place.category}
-                    </Badge>
-                  </div>
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            <Card className="rounded-3xl shadow-[0_16px_38px_-26px_rgba(15,23,42,0.22)]">
+              <CardHeader className="pb-2">
+                <CardDescription>Saved spots</CardDescription>
+                <CardTitle className="text-3xl">{favoritedPlaces.length}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="rounded-3xl shadow-[0_16px_38px_-26px_rgba(15,23,42,0.22)]">
+              <CardHeader className="pb-2">
+                <CardDescription>Average rating</CardDescription>
+                <CardTitle className="text-3xl">{averageRating}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card className="rounded-3xl shadow-[0_16px_38px_-26px_rgba(15,23,42,0.22)]">
+              <CardHeader className="pb-2">
+                <CardDescription>Featured</CardDescription>
+                <CardTitle className="text-3xl">{featuredPlaces.length}</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
 
-                  <div className="absolute bottom-6 left-6 right-6">
-                    <div className="flex items-center gap-1.5 text-amber-400 mb-1">
-                      <Star size={14} className="fill-current" />
-                      <span className="text-sm font-bold">
-                        {place.rating.toFixed(1)}
-                      </span>
-                      <span className="text-xs text-white/60 font-medium">
-                        ({place.reviewCount})
-                      </span>
-                    </div>
-                    <h3 className="text-2xl font-extrabold text-white mb-1 leading-tight">
-                      {place.name}
-                    </h3>
-                    <div className="flex items-center gap-1 text-white/70 text-sm">
-                      <MapPin size={14} />
-                      {place.province}
-                    </div>
+        <Card className="mt-8 rounded-3xl shadow-[0_20px_50px_-30px_rgba(15,23,42,0.2)]">
+          <CardHeader className="space-y-3">
+            <CardTitle className="text-2xl">Browse your collection</CardTitle>
+            <CardDescription>
+              Filter your saved list into featured places or highly rated stops.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {favoritedPlaces.length === 0 ? (
+              <Card className="rounded-3xl border-dashed py-0 shadow-none">
+                <CardContent className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
+                  <div className="mb-4 rounded-full border bg-muted p-4">
+                    <Compass className="h-6 w-6 text-muted-foreground" />
                   </div>
-                </div>
-
-                <CardContent className="p-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mb-6">
-                    {place.description}
-                  </p>
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1 h-12 rounded-2xl font-bold shadow-lg"
-                      onClick={() => handleViewOnMap(place.id)}
-                    >
-                      View Details <ArrowRight size={18} className="ml-2" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-12 w-12 rounded-2xl border-zinc-200 text-rose-500 hover:bg-rose-50 hover:border-rose-200"
-                    >
-                      <Trash2 size={20} />
-                    </Button>
-                  </div>
+                  <CardTitle className="text-2xl">No favorites yet</CardTitle>
+                  <CardDescription className="mt-2 max-w-md text-sm leading-6">
+                    Heart places from the map and they&apos;ll appear here in a much
+                    easier list for planning later.
+                  </CardDescription>
+                  <Button asChild className="mt-6 rounded-2xl">
+                    <Link href="/">Explore the map</Link>
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
-      </div>
+            ) : (
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList variant="default" className="w-full justify-start rounded-2xl">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="featured">Featured</TabsTrigger>
+                  <TabsTrigger value="topRated">Top rated</TabsTrigger>
+                </TabsList>
+
+                {(Object.keys(tabData) as FavoritesTab[]).map((tab) => (
+                  <TabsContent key={tab} value={tab} className="pt-2">
+                    <FavoritesGrid
+                      places={tabData[tab]}
+                      onOpenMap={handleOpenMap}
+                      onRemove={(placeId) => removeFavorite.mutate(placeId)}
+                      removingId={removeFavorite.variables}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
+            )}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }

@@ -7,6 +7,29 @@ import { redis } from "./redis";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.EMAIL_FROM || "onboarding@resend.dev";
+const discordClientId = process.env.DISCORD_CLIENT_ID;
+const discordClientSecret = process.env.DISCORD_CLIENT_SECRET;
+const isLocalDevelopment =
+  process.env.NODE_ENV !== "production" && !process.env.VERCEL;
+const configuredBaseUrl =
+  isLocalDevelopment
+    ? "http://localhost:3000"
+    : process.env.BETTER_AUTH_URL ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+
+const trustedOrigins = Array.from(
+  new Set(
+    [
+      configuredBaseUrl,
+      process.env.NEXT_PUBLIC_APP_URL,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://lomhea.vercel.app",
+    ].filter((origin): origin is string => Boolean(origin))
+  )
+);
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -28,11 +51,8 @@ export const auth = betterAuth({
       await redis.del(key);
     },
   },
-  baseURL:
-    process.env.BETTER_AUTH_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000"),
+  baseURL: configuredBaseUrl,
+  trustedOrigins,
 
   emailAndPassword: {
     enabled: true,
@@ -74,6 +94,14 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
+    ...(discordClientId && discordClientSecret
+      ? {
+          discord: {
+            clientId: discordClientId,
+            clientSecret: discordClientSecret,
+          },
+        }
+      : {}),
   },
 
   user: {
@@ -85,6 +113,10 @@ export const auth = betterAuth({
       banned: {
         type: "boolean",
         defaultValue: false,
+      },
+      coverImage: {
+        type: "string",
+        required: false,
       },
     },
   },

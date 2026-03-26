@@ -12,6 +12,7 @@ model User {
   name          String?
   email         String?        @unique
   image         String?
+  coverImage    String?
   role          Role           @default(USER)
   banned        Boolean        @default(false)
   createdAt     DateTime       @default(now())
@@ -169,6 +170,7 @@ enum Role {
   CONTRIBUTOR
   MODERATOR
   ADMIN
+  WEBMASTER
 }
 
 enum RequestStatus {
